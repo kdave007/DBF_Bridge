@@ -1,0 +1,5 @@
+pythonnet>=3.0.1
+requests>=2.31.0
+pyodbc>=4.0.39
+python-dotenv>=1.0.0
+tqdm>=4.65.0
