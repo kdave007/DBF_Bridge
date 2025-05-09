@@ -17,7 +17,7 @@ def main():
     DBFConnection.set_dll_path(dll_path)
 
     # Initialize reader
-    enc_pass = "X3WGTXG5QJZ6K9ZC4VO2"
+    enc_pass = "my password"
     source_path = r"C:\\Users\\campo\\Documents\\projects\\DBF_encrypted\pospcp"
     table_name = "VENTA"
     limit_rows = 2
