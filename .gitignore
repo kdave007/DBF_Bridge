@@ -79,3 +79,5 @@ pospcp/
 leer_dbf.py
 test_core.py
 test.py
+
+.windsurf/

@@ -1,0 +1,131 @@
+{
+    "CAT_PROD.DBF": {
+        "fields": {
+                "clave":{
+                    "dbf": "CLAVE",
+                    "velneo_table": "REF" ,
+                    "type": "string"
+                },
+                "prod_desc":{
+                    "dbf": "PROD_DESCR",
+                    "velneo_table": "Name" ,
+                    "type": "string"
+                },
+                "prod_exist":{
+                    "dbf": "PROD_EXIST",
+                    "velneo_table": "Exs" ,
+                    "type": "number"
+                },
+                "prod_lis10":{
+                    "dbf": "PROD_LIS10",
+                    "velneo_table": "PVP" ,
+                    "type": "number"
+                },
+                "prod_unmed":{
+                    "dbf": "PROD_UNMED",
+                    "velneo_table": "Unidad" ,
+                    "type": "string"
+                },
+                "prov_clave":{
+                    "dbf": "PROV_CLAVE",
+                    "velneo_table": "PRV" ,
+                    "type": "string"
+                },
+                "cdeslarga":{
+                    "dbf": "CDESLARGA",
+                    "velneo_table": "DSC" ,
+                    "type": "string"
+                },
+                "barcode":{
+                    "dbf": "BARCODE",
+                    "velneo_table": "COD_BAR" ,
+                    "type": "string"
+                },
+                "Familia":{
+                    "dbf": "FAMILIA",
+                    "velneo_table": "Familia" ,
+                    "type": "string"
+                },
+                "subfam":{
+                    "dbf": "SUBFAM",
+                    "velneo_table": "SubFamilia" ,
+                    "type": "string"
+                },
+                "prod_prome":{
+                    "dbf": "PROD_PROME",
+                    "velneo_table": "importe" ,
+                    "type": "number"
+                }
+            },
+        "target_table": "Articulos"
+    },
+    "VENTA.DBF": {
+        "fields": {
+            "TIPO_DOC":{
+                    "dbf": "TIPO_DOC",
+                    "velneo_table": "Cabecera" ,
+                    "type": "string"
+            },
+            "NO_REFEREN":{
+                    "dbf": "NO_REFEREN",
+                    "velneo_table": "Folio" ,
+                    "type": "number"
+                },
+            "CLAVE_CLI":{
+                    "dbf": "CLAVE_CLI",
+                    "velneo_table": "cliente" ,
+                    "type": "string"
+            },
+            "CLAVE_VEND":{
+                    "dbf": "CLAVE_VEND",
+                    "velneo_table": "empleado" ,
+                    "type": "number"
+            },
+            "F_EMISION":{
+                    "dbf": "F_EMISION",
+                    "velneo_table": "fecha" ,
+                    "type": "string"
+            },
+            "TOTAL_BRUT":{
+                    "dbf": "TOTAL_BRUT",
+                    "velneo_table": "total_bruto" ,
+                    "type": "number"
+            }
+        }
+    },
+    "PARTVTA.DBF": {
+        "fields": {
+            "NO_REFEREN":{
+                    "dbf": "NO_REFEREN",
+                    "velneo_table": "Folio" ,
+                    "type": "number"
+            },
+            "CLAVE_ART":{
+                    "dbf": "CLAVE_ART",
+                    "velneo_table": "REF" ,
+                    "type": "number"
+            },
+            "subfam":{
+                    "dbf": "SUBFAM",
+                    "velneo_table": "SubFamilia" ,
+                    "type": "string"
+            },
+            "CANTIDAD":{
+                    "dbf": "CANTIDAD",
+                    "velneo_table": "cantidad" ,
+                    "type": "number"
+            },
+            "PRECIO_UNI":{
+                    "dbf": "PRECIO_UNI",
+                    "velneo_table": "precio" ,
+                    "type": "number"
+            },
+            "DESCUENTO":{
+                    "dbf": "DESCUENTO",
+                    "velneo_table": "descuento" ,
+                    "type": "number"
+            }
+        }
+    }
+}
+    

@@ -46,16 +46,16 @@ class DBFReader:
             if filters:
                 filter_conditions = []
                 for f in filters:
-                    if f['field'] == 'F_EMISION':
-                        if f['operator'] == 'range':
-                            filter_conditions.append(
-                                f"F_EMISION >= '{f['from_value']}' AND "
-                                f"F_EMISION <= '{f['to_value']}'"
-                            )
-                        else:
-                            filter_conditions.append(
-                                f"F_EMISION {f['operator']} '{f['value']}'"
-                            )
+                    #if f['field'] == 'F_EMISION':
+                    if f['operator'] == 'range':
+                        filter_conditions.append(
+                            f"{f['field']} >= '{f['from_value']}' AND "
+                            f"{f['field']} <= '{f['to_value']}'"
+                        )
+                    else:
+                        filter_conditions.append(
+                            f"{f['field']}{f['operator']} '{f['value']}'"
+                        )
                 
                 if filter_conditions:
                     filter_expr = " AND ".join(filter_conditions)
@@ -63,7 +63,12 @@ class DBFReader:
                     reader.Filter = filter_expr
             
             # Process results
+            count = 0
             while reader.Read():
+               
+                if limit and count >= limit:
+                    break
+                    
                 record = {}
                 for i in range(reader.FieldCount):
                     field_name = reader.GetName(i)
@@ -71,6 +76,7 @@ class DBFReader:
                     record[field_name] = self.converter.convert_value(value)
                     
                 results.append(record)
+                count += 1
             
             return results
             
@@ -88,6 +94,7 @@ class DBFReader:
             JSON string representation of the records
         """
         records = self.read_table(table_name, limit, filters)
+        
         return json.dumps(records, indent=4, ensure_ascii=False)
 
     def get_table_info(self, table_name: str) -> Dict[str, Any]:
