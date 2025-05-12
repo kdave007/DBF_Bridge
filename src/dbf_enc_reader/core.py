@@ -45,8 +45,9 @@ class DBFReader:
             # Apply filters if any
             if filters:
                 filter_conditions = []
+                use_or = len(filters) > 1 and all(f['field'] == filters[0]['field'] for f in filters)
+                
                 for f in filters:
-                    #if f['field'] == 'F_EMISION':
                     if f['operator'] == 'range':
                         filter_conditions.append(
                             f"{f['field']} >= '{f['from_value']}' AND "
@@ -58,9 +59,15 @@ class DBFReader:
                         )
                 
                 if filter_conditions:
-                    filter_expr = " AND ".join(filter_conditions)
+                    join_op = " OR " if use_or else " AND "
+                    filter_expr = join_op.join(filter_conditions)
                     print(f"\nApplying AOF filter: {filter_expr}")
-                    reader.Filter = filter_expr
+                    try:
+                        reader.Filter = filter_expr
+                    except Exception as e:
+                        print(f"\nFilter error: {str(e)}")
+                        print(f"Filter expression: {filter_expr}")
+                        raise
             
             # Process results
             count = 0

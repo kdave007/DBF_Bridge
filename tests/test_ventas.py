@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 from datetime import datetime, timedelta
 import json
+import time
 
 # Add project root to path
 project_root = str(Path(__file__).parent.parent)
@@ -19,9 +20,10 @@ def main():
         if not Path(source_dir).exists():
             raise ValueError(f"Source directory not found: {source_dir}")
             
+            
         config = DBFConfig(
             dll_path=r"C:\Program Files (x86)\Advantage 10.10\ado.net\1.0\Advantage.Data.Provider.dll",
-            encryption_password="X3W",
+            encryption_password="X3WGTXG5QJZ6K9ZC4VO2",
             source_directory=source_dir,
             limit_rows=3  # Limit to 3 sales for testing
         )
@@ -33,9 +35,9 @@ def main():
         # Create controller
         controller = VentasController(mapping_manager, config)
         
-        # Get data for last 30 days
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=30)
+        # Test date range (April 19-20, 2025)
+        start_date = datetime(2025, 4, 20)
+        end_date = datetime(2025, 4, 21)
         
         print(f"\nFetching sales from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
         print("=" * 50)
@@ -44,11 +46,28 @@ def main():
         data = controller.get_sales_in_range(start_date, end_date)
         print(f"\nFound {len(data)} sales")
         
-        # Print first few records with their details
-        print("\nFirst few sales with details:")
-        for i, sale in enumerate(data[:2], 1):
-            print(f"\nSale {i}:")
-            print(json.dumps(sale, indent=2, ensure_ascii=False))
+        # Create output directory if it doesn't exist
+        output_dir = Path(project_root) / "output"
+        output_dir.mkdir(exist_ok=True)
+        
+        # Generate filename with timestamp
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        date_range = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
+        filename = f"ventas_{date_range}_{timestamp}.json"
+        output_file = output_dir / filename
+        
+        # Save data to JSON file
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump({
+                'date_range': {
+                    'start': start_date.strftime('%Y-%m-%d'),
+                    'end': end_date.strftime('%Y-%m-%d')
+                },
+                'total_sales': len(data),
+                'sales': data
+            }, f, indent=2, ensure_ascii=False)
+        
+        print(f"\nData saved to: {output_file}")
             
     except Exception as e:
         print(f"\nError: {str(e)}")
