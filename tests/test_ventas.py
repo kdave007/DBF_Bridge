@@ -25,7 +25,7 @@ def main():
             dll_path=r"C:\Program Files (x86)\Advantage 10.10\ado.net\1.0\Advantage.Data.Provider.dll",
             encryption_password="X3WGTXG5QJZ6K9ZC4VO2",
             source_directory=source_dir,
-            limit_rows=3  # Limit to 3 sales for testing
+            limit_rows=500  # Limit to 3 sales for testing
         )
         
         # Initialize mapping manager
@@ -36,7 +36,7 @@ def main():
         controller = VentasController(mapping_manager, config)
         
         # Test date range (April 19-20, 2025)
-        start_date = datetime(2025, 4, 20)
+        start_date = datetime(2025, 3, 20)# yyyy, dd, mm
         end_date = datetime(2025, 4, 21)
         
         print(f"\nFetching sales from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
