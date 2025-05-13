@@ -1,4 +1,5 @@
 import sys
+import time
 from pathlib import Path
 from datetime import datetime, timedelta
 import json
@@ -34,15 +35,11 @@ def main():
         # Create controller
         controller = CatProdController(mapping_manager, config)
         
-        # Test specific date (May 4th, 2025)
-        start_date = datetime(2025, 5, 4)
-        end_date = datetime(2025, 5, 4)
-        
         print(f"\nFetching last {config.limit_rows} records from CAT_PROD")
         print("=" * 50)
         
         # Get data (using any date since we're ignoring the filter)
-        data = controller.get_data_in_range(datetime.now(), datetime.now())
+        data = controller.get_data_in_range()
         print(f"\nFound {len(data)} records")
         #Print results
         print(f"\nFound {len(data)} records")
@@ -50,6 +47,24 @@ def main():
         for i, record in enumerate(data[:2], 1):
             print(f"\nRecord {i}:")
             print(json.dumps(record, indent=2, ensure_ascii=False))
+
+        # Create output directory if it doesn't exist
+        output_dir = Path(project_root) / "output"
+        output_dir.mkdir(exist_ok=True)
+        
+        # Generate filename with timestamp
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        filename = f"cat_prod_{timestamp}.json"
+        output_file = output_dir / filename    
+
+
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump({
+                'total': len(data),
+                'results': data
+            }, f, indent=2, ensure_ascii=False)
+        
+        print(f"\nData saved to: {output_file}")    
             
     except Exception as e:
         print(f"\nError: {str(e)}")

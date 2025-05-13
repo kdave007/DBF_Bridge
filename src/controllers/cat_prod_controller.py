@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import json
 from ..dbf_enc_reader.core import DBFReader
 from ..dbf_enc_reader.connection import DBFConnection
@@ -22,7 +22,7 @@ class CatProdController:
         DBFConnection.set_dll_path(self.config.dll_path)
         self.reader = DBFReader(self.config.source_directory, self.config.encryption_password)
         
-    def get_data_in_range(self, start_date: datetime, end_date: datetime) -> List[Dict[str, Any]]:
+    def get_data_in_range(self, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None) -> List[Dict[str, Any]]:
         """Get CAT_PROD data within the specified date range.
         
         Args:
