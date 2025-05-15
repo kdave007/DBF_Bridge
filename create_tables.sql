@@ -1,37 +1,28 @@
 -- Create factura_venta table
 CREATE TABLE IF NOT EXISTS factura_venta (
-    id VARCHAR(50) PRIMARY KEY,  -- Format: FA_folio
-    cabecera VARCHAR(10),
+    id INTEGER PRIMARY KEY,
+    cabecera CHARACTER VARYING(10),
     folio INTEGER,
-    cliente VARCHAR(50),
+    cliente CHARACTER VARYING(50),
     empleado INTEGER,
-    fecha TIMESTAMP,
+    fecha TIMESTAMP WITHOUT TIME ZONE,
     total_bruto NUMERIC(10,2),
-    detalles JSONB,  -- Store full JSON for reference
-    status VARCHAR(20) DEFAULT 'pending',
-    error_message TEXT,
-    api_response JSONB,
-    retry_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    fecha_creacion TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create detalle_factura_venta table
 CREATE TABLE IF NOT EXISTS detalle_factura_venta (
-    id VARCHAR(50) PRIMARY KEY,  -- Format: FA_folio_REF
-    header_id VARCHAR(50) REFERENCES factura_venta(id),
+    id VARCHAR(50) PRIMARY KEY,  -- Format: folio_REF
+    header_id VARCHAR(50),
     folio INTEGER,
     referencia INTEGER,
     cantidad NUMERIC(10,3),
     precio NUMERIC(12,2),
     descuento NUMERIC(10,2),
     total_linea NUMERIC(12,2),
-    status VARCHAR(20) DEFAULT 'pending',
-    error_message TEXT,
-    api_response JSONB,
-    retry_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    fecha_creacion TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create estado_factura_venta table

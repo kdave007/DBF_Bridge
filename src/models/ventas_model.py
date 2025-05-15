@@ -11,21 +11,44 @@ class VentasModel(BaseModel):
     
     def prepare_record(self, record: Dict[str, Any]) -> Dict[str, Any]:
         """Prepare a record for database insertion"""
+        # Print record fields for debugging
+        if not hasattr(self.__class__, '_printed_fields'):
+            print("\nAvailable fields in record:", list(record.keys()))
+            setattr(self.__class__, '_printed_fields', True)
+
         # Convert the date string to proper timestamp
-        # Handle different date formats
+        fecha_str = record['fecha']
+        
+        # First try direct parse with Spanish AM/PM
         try:
-            fecha = datetime.strptime(record['fecha'], '%d/%m/%Y %I:%M:%S %p')
+            fecha = datetime.strptime(fecha_str, '%d/%m/%Y %I:%M:%S a. m.')
         except ValueError:
             try:
-                fecha = datetime.strptime(record['fecha'], '%d/%m/%Y %H:%M:%S')
+                fecha = datetime.strptime(fecha_str, '%d/%m/%Y %I:%M:%S p. m.')
+                # Add 12 hours for PM
+                if fecha.hour != 12:  # Don't add 12 hours if it's 12 PM
+                    fecha = fecha.replace(hour=fecha.hour + 12)
             except ValueError:
-                fecha = datetime.strptime(record['fecha'].replace('a. m.', 'AM').replace('p. m.', 'PM'), '%d/%m/%Y %I:%M:%S %p')
+                try:
+                    # Try 24-hour format
+                    fecha = datetime.strptime(fecha_str, '%d/%m/%Y %H:%M:%S')
+                except ValueError as e:
+                    print(f"Failed to parse date: {fecha_str}")
+                    raise
         
-        return {
+        prepared_record = {
+            'id': int(record['Folio']),  # Using folio as ID
             'cabecera': record['Cabecera'],
-            'folio': record['Folio'],
+            'folio': int(record['Folio']),
             'cliente': record['cliente'],
-            'empleado': record['empleado'],
-            'fecha': fecha,
+            'empleado': int(record['empleado']),
+            'fecha': fecha.strftime('%Y-%m-%d %H:%M:%S'),  # Format as string for PostgreSQL
             'total_bruto': float(record['total_bruto'])
+            # fecha_creacion and fecha_actualizacion are handled by DB defaults
         }
+        
+        if not hasattr(self.__class__, '_printed_prepared'):
+            print("\nPrepared record:", prepared_record)
+            setattr(self.__class__, '_printed_prepared', True)
+            
+        return prepared_record

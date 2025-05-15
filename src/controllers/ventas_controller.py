@@ -130,8 +130,8 @@ class VentasController:
         filters = [{
             'field': 'F_EMISION',
             'operator': 'range',
-            'from_value': start_date.strftime('%m/%d/%Y 12:00:00 a. m.'),  # Format to match DBF
-            'to_value': end_date.strftime('%m/%d/%Y 11:59:59 p. m.'),  # End of day
+            'from_value': start_date.strftime('%d/%m/%Y 12:00:00 a. m.'),  # Format to match DBF
+            'to_value': end_date.strftime('%d/%m/%Y 11:59:59 p. m.'),  # End of day
             'is_date': False  # F_EMISION is stored as string
         }]
         print(f"\nSearching for date range: {start_date.strftime('%d/%m/%Y %H:%M:%S')} to {end_date_inclusive.strftime('%d/%m/%Y %H:%M:%S')}")
@@ -175,7 +175,11 @@ class VentasController:
                     except (ValueError, TypeError):
                         value = 0
                 
-                #transformed[target_field] = value
                 transformed[mapping['velneo_table']] = value
+                
+        # Print first record for debugging
+        if not hasattr(VentasController, '_printed_transform'):
+            print("\nTransformed record example:", transformed)
+            setattr(VentasController, '_printed_transform', True)
                 
         return transformed

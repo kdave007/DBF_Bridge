@@ -23,21 +23,44 @@ class BaseModel:
         """Insert multiple records into the database"""
         if not records:
             return
+
+        # Get the column names from the first record
+        columns = list(records[0].keys())
         
+        # Build the INSERT query
+        column_names = ', '.join(columns)
+        
+        # Convert records to list of tuples for executemany
+        values = [[record[col] for col in columns] for record in records]
+        
+        # Always print query for tracking table
+        if self.table_name == 'estado_factura_venta':
+            print(f"\nDEBUG: Printing tracking query for {self.table_name}")
+            # Get values from first record
+            first_values = [str(records[0][col]) for col in columns]
+            # Format values for SQL
+            formatted_values = [f"'{val}'" for val in first_values]
+            # Create the full INSERT statement
+            example_query = f"INSERT INTO {self.table_name} ({column_names}) VALUES ({', '.join(formatted_values)})"
+            print(f"\nTracking Query:\n{example_query}")
+        
+        # Print first query for any table
+        elif not hasattr(self, '_printed_' + self.table_name):
+            print(f"\nQuery for {self.table_name}:")
+            print(f"INSERT INTO {self.table_name} ({column_names}) VALUES ({', '.join(['%s']*len(columns))})")
+            setattr(self, '_printed_' + self.table_name, True)
+        
+        # Build the parameterized query for actual execution
+        placeholders = ', '.join(['%s'] * len(columns))
+        query = f"INSERT INTO {self.table_name} ({column_names}) VALUES ({placeholders})"
+        print(query)
+        
+        # Execute the query
+        cursor = connection.cursor() if connection else self.db.cursor
         try:
-            # Get field names from first record
-            fields = list(records[0].keys())
-            placeholders = [f'%({field})s' for field in fields]
-            
-            # Build the query
-            query = f"""
-            INSERT INTO {self.table_name} ({', '.join(fields)})
-            VALUES ({', '.join(placeholders)})
-            """
-            
-            # Execute batch insert with optional transaction
-            self.db.execute_batch_update(query, records, connection)
-            
+            cursor.executemany(query, values)
+            if not connection:  # Only commit if we're not in a transaction
+                self.db.connection.commit()
         except Exception as e:
             error_msg = f"Failed to insert records into {self.table_name}"
             if isinstance(e, psycopg2.Error):

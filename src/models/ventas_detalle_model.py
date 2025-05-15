@@ -25,7 +25,7 @@ class VentasDetalleModel(BaseModel):
     def prepare_batch(self, header_record: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Prepare a batch of detail records from a header record"""
         details = []
-        header_id = f"{header_record['Cabecera']}_{header_record['Folio']}"
+        header_id = f"{header_record['Folio']}"
         
         if 'detalles' in header_record:
             for detail in header_record['detalles']:
