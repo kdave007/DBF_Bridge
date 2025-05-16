@@ -103,7 +103,7 @@
             "CLAVE_ART":{
                     "dbf": "CLAVE_ART",
                     "velneo_table": "REF" ,
-                    "type": "number"
+                    "type": "string"
             },
             "subfam":{
                     "dbf": "SUBFAM",
