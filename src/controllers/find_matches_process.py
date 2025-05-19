@@ -12,11 +12,22 @@ from src.controllers.ventas_controller import VentasController
 from src.dbf_enc_reader.mapping_manager import MappingManager
 from src.config.dbf_config import DBFConfig
 from src.models.ventas_model import VentasModel
+from src.controllers.dbf_sql_comparator import DBFSQLComparator
 
 class MatchesProcess:
 
     def __init__(self) -> None:
-        pass
+        # Database configuration
+        self.db_config = {
+            'host': 'localhost',
+            'database': 'suc_vel',
+            'user': 'postgres',
+            'password': 'comexcare',
+            'port': '5432'
+        }
+        
+        # Initialize the comparator
+        self.comparator = DBFSQLComparator(self.db_config)
 
     def compare_batches(self):
         
@@ -28,8 +39,8 @@ class MatchesProcess:
             limit_rows=500  # Limit to 3 sales for testing
         )
         # Test date range (April 19-20, 2025)
-        start_date = datetime(2025, 5, 4)# yyyy, dd, mm
-        end_date = datetime(2025, 5, 4)
+        start_date = datetime(2025, 5, 5)# yyyy, dd, mm
+        end_date = datetime(2025, 5, 5)
         
         
         #fetch dbf data
@@ -39,21 +50,31 @@ class MatchesProcess:
         sql_records = self.get_sql_data(start_date, end_date)
         
         if not sql_records:
+            print(sql_records)
             print(f"No hay registros en SQL entre {start_date} y {end_date}. insertando nuevos registros")
-            #self.insert_process(dbf_results)
+            self.insert_process(dbf_results)
         else:
             result = 0
+            #the next method should be in this line
+            #it is outside the else for debugging 
+        #this method goes inside the else
+        comparison_result = self.comparator.compare_batch_by_day(dbf_records=dbf_results, sql_records=sql_records)
+        
+        self.print_comparison_results(comparison_result['detailed_comparison'])
+        
+        # Return the full result for programmatic use
+        return comparison_result
+                
         
         
-        
-        print(f"\nRegistros SQL encontrados: {len(dbf_results)}")
-        print(f"\nMostrando 2 registros de ejemplo:")
-        for idx, record in enumerate(dbf_results['data'][:2], 1):
-            print(f"\nRecord #{idx}:")
-            print(f"Folio: {record.get('Folio')}")
-            print(f"MD5 Hash: {record.get('md5_hash')}")
-            print(f"Details: {len(record.get('detalles', []))} items")
-        print(f"\nTotal records: {len(dbf_results['data'])}")
+        # print(f"\nRegistros SQL encontrados: {len(dbf_results)}")
+        # print(f"\nMostrando 2 registros de ejemplo:")
+        # for idx, record in enumerate(dbf_results['data'][:2], 1):
+        #     print(f"\nRecord #{idx}:")
+        #     print(f"Folio: {record.get('Folio')}")
+        #     print(f"MD5 Hash: {record.get('md5_hash')}")
+        #     print(f"Details: {len(record.get('detalles', []))} items")
+        # print(f"\nTotal records: {len(dbf_results['data'])}")
 
         
         
@@ -71,7 +92,9 @@ class MatchesProcess:
         data = controller.get_sales_in_range(start_date, end_date)
         
         # Agregar hash MD5 a cada registro
-        for record in data:
+        for i, record in enumerate(data):
+            # HARDCODED VALUES FOR DEBUGGING DELETE AFTER TESTING ----------------------------------------------------------------------------------------------------------------->>>>>>>>>
+            record['empleado'] = 500 if i == 110 else record['empleado']
             record_str = json.dumps(record, sort_keys=True)
             record['md5_hash'] = hashlib.md5(record_str.encode('utf-8')).hexdigest()
         
@@ -121,15 +144,15 @@ class MatchesProcess:
         tracker = PostgresTracking(db_config)
         lote_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # Preparar datos para inserción (solo primeros 4 registros para debug)
+        # Preparar datos para inserción (todos los registros)
         batch_data = []
         valid_records = 0
 
-        print(dbf_result['data'][:1])
+        print(f"Processing {len(dbf_result['data'])} records...")
         
-        for record in dbf_result['data'][:4]:  # Solo primeros 4 registros
+        for i, record in enumerate(dbf_result['data'], 1):  # Procesar todos los registros
             # Validar campos obligatorios (usando las mayúsculas exactas del DBF)
-            folio = record.get('Folio')  # Mayúscula según el DBF
+            folio = record.get('Folio') # Mayúscula según el DBF --------------------------------------------------debug hardcoded value, delete after testing ----------------
             fecha = record.get('fecha')  # Minúscula según el DBF
             
             if not folio or not fecha:
@@ -137,9 +160,10 @@ class MatchesProcess:
                 continue
                 
             try:
-                # Procesar fecha (formato: 'dd/mm/yyyy HH:MM:SS a. m./p. m.')
+                # Procesar fecha (formato: 'mm/dd/yyyy HH:MM:SS a. m./p. m.')
                 fecha_str = fecha.split()[0]  # Tomar solo la parte de la fecha
-                fecha_emision = datetime.strptime(fecha_str, '%d/%m/%Y').date()
+                fecha_emision = datetime.strptime(fecha_str, '%m/%d/%Y').date()
+                print(f"Parsed date {fecha_str} as {fecha_emision} (MM/DD/YYYY format)")
                 
                 # Validar hash
                 md5_hash = record.get('md5_hash')
@@ -150,7 +174,7 @@ class MatchesProcess:
                 batch_data.append({
                     'folio': folio,
                     'total_partidas': len(record.get('detalles', [])) if record.get('detalles') is not None else 0,
-                    'descripcion': f"Factura {folio}",
+                    'descripcion': f"empleado : {record.get('empleado')}",
                     'hash': md5_hash,
                     'fecha_emision': fecha_emision
                 })
@@ -182,5 +206,71 @@ class MatchesProcess:
         
         return success
 
-    def dbf_sql_comparison(dbf_records, sql_records):
-        pass
+    # Comparison methods have been moved to DBFSQLComparator class
+
+    def print_comparison_results(self, detailed_comparison):
+        print("\n=================================================")
+        print("=== API OPERATIONS SUMMARY ===")
+        print("=================================================\n")
+        
+        # More debug prints
+        print(f"DEBUG: detailed_comparison type: {type(detailed_comparison)}")
+        print(f"DEBUG: detailed_comparison content: {detailed_comparison}")
+        
+        # Print summary statistics
+        summary = detailed_comparison.get('summary', {})
+        print(f"Total DBF Records: {detailed_comparison.get('total_dbf_records', 0)}")
+        print(f"Total SQL Records: {detailed_comparison.get('total_sql_records', 0)}")
+        print(f"Status: {detailed_comparison.get('status', 'unknown')}\n")
+        
+        print("API Operations Required:")
+        print(f"  CREATE: {summary.get('create_count', 0)} records")
+        print(f"  UPDATE: {summary.get('update_count', 0)} records")
+        print(f"  DELETE: {summary.get('delete_count', 0)} records")
+        print(f"  NO ACTION: {summary.get('matching_count', 0)} records")
+        print(f"  TOTAL ACTIONS: {summary.get('total_actions_needed', 0)} operations\n")
+        
+        # Get API operations
+        api_ops = detailed_comparison.get('api_operations', {})
+        
+        # Print sample of records to create (DBF only)
+        create_records = api_ops.get('create', [])
+        if create_records:
+            print("\n=== SAMPLE RECORDS TO CREATE (DBF only) ===")
+            for i, record in enumerate(create_records[:3], 1):
+                print(f"\nRecord #{i}:")
+                print(f"  Folio: {record.get('Folio')}")
+                if 'md5_hash' in record:
+                    print(f"  Hash: {record.get('md5_hash')}")
+                if 'fecha' in record:
+                    print(f"  Fecha: {record.get('fecha')}")
+            if len(create_records) > 3:
+                print(f"\n... and {len(create_records) - 3} more records to create")
+        
+        # Print sample of records to update (mismatched)
+        update_records = api_ops.get('update', [])
+        if update_records:
+            print("\n=== SAMPLE RECORDS TO UPDATE (hash mismatch) ===")
+            for i, record in enumerate(update_records[:3], 1):
+                print(f"\nRecord #{i}:")
+                print(f"  Folio: {record.get('folio')}")
+                print(f"  DBF Hash: {record.get('dbf_hash')}")
+                print(f"  SQL Hash: {record.get('sql_hash')}")
+            if len(update_records) > 3:
+                print(f"\n... and {len(update_records) - 3} more records to update")
+        
+        # Print sample of records to delete (SQL only)
+        delete_records = api_ops.get('delete', [])
+        if delete_records:
+            print("\n=== SAMPLE RECORDS TO DELETE (SQL only) ===")
+            for i, record in enumerate(delete_records[:3], 1):
+                print(f"\nRecord #{i}:")
+                print(f"  Folio: {record.get('folio')}")
+                if 'hash' in record:
+                    print(f"  Hash: {record.get('hash')}")
+                if 'fecha_emision' in record:
+                    print(f"  Fecha: {record.get('fecha_emision')}")
+            if len(delete_records) > 3:
+                print(f"\n... and {len(delete_records) - 3} more records to delete")
+        
+        print("\n=================================================\n")

@@ -125,10 +125,27 @@ class PostgresTracking:
         try:
             with psycopg2.connect(**self.config) as conn:
                 with conn.cursor() as cursor:
+                    print(f"\nExecuting SQL query with dates: {start_date} to {end_date}")
                     cursor.execute(query, (start_date, end_date))
+                    
                     if cursor.description:
                         columns = [desc[0] for desc in cursor.description]
-                        return [dict(zip(columns, row)) for row in cursor.fetchall()]
+                        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+                        
+                        print(f"Query found {len(results)} records")
+                        
+                        # Print sample of results (first 2)
+                        if results:
+                            print("\nSample records:")
+                            for i, record in enumerate(results[:2], 1):
+                                print(f"\nRecord #{i}:")
+                                print(f"Folio: {record.get('folio')}")
+                                print(f"Hash: {record.get('hash')}")
+                                print(f"Fecha: {record.get('fecha_emision')}")
+                        else:
+                            print("No records found in date range")
+                            
+                        return results
                     return []
         except Exception as e:
             logging.error(f"Error obteniendo registros: {e}")
@@ -282,3 +299,35 @@ class PostgresTracking:
         except Exception as e:
             self.logger.error(f"Error fetching lotes by fecha: {str(e)}")
             return []
+            
+    def get_single_lote_by_date(self, start_date: date) -> Optional[Dict]:
+        """
+        Retrieve a single record from lote_diario by start date
+        
+        Args:
+            start_date: The reference date to search for
+            
+        Returns:
+            A dictionary with the lote data or None if not found
+        """
+        try:
+            with psycopg2.connect(**self.config) as conn:
+                with conn.cursor() as cursor:
+                    query = """
+                        SELECT lote, fecha_insercion, fecha_referencia, hash_lote
+                        FROM lote_diario
+                        WHERE fecha_referencia = %s
+                        ORDER BY fecha_insercion DESC
+                        LIMIT 1
+                    """
+                    
+                    cursor.execute(query, (start_date,))
+                    row = cursor.fetchone()
+                    
+                    if row:
+                        columns = [desc[0] for desc in cursor.description]
+                        return dict(zip(columns, row))
+                    return None
+        except Exception as e:
+            logging.error(f"Error retrieving single lote by date: {e}")
+            return None
