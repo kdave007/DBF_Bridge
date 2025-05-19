@@ -6,6 +6,9 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+# Now we can import from src
+from src.config.dbf_config import DBFConfig
+
 print(f"PYTHONPATH: {sys.path}")  # Debug
 
 try:
@@ -21,7 +24,13 @@ def main():
     
     print("Calling compare_batches()...")
     try:
-        result = processor.compare_batches()
+        config = DBFConfig(
+            dll_path=r"C:\\Program Files (x86)\\Advantage 10.10\\ado.net\\1.0\\Advantage.Data.Provider.dll",
+            encryption_password="X3WGTXG5QJZ6K9ZC4VO2",
+            source_directory=r"C:\\Users\\campo\\Documents\\projects\\DBF_encrypted\\pospcp",
+            limit_rows=500  # Limit to 3 sales for testing
+        )
+        result = processor.compare_batches(config)
         if result:
             print("Test completed successfully!")
         else:

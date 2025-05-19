@@ -29,15 +29,10 @@ class MatchesProcess:
         # Initialize the comparator
         self.comparator = DBFSQLComparator(self.db_config)
 
-    def compare_batches(self):
+    def compare_batches(self, config):
         
         #TO DO : this config may be pass as a parameter and not defined here, but just for testing
-        config = DBFConfig(
-            dll_path=r"C:\Program Files (x86)\Advantage 10.10\ado.net\1.0\Advantage.Data.Provider.dll",
-            encryption_password="X3WGTXG5QJZ6K9ZC4VO2",
-            source_directory=r"C:\Users\campo\Documents\projects\DBF_encrypted\pospcp",
-            limit_rows=500  # Limit to 3 sales for testing
-        )
+       
         # Test date range (April 19-20, 2025)
         start_date = datetime(2025, 5, 5)# yyyy, dd, mm
         end_date = datetime(2025, 5, 5)
@@ -53,11 +48,7 @@ class MatchesProcess:
             print(sql_records)
             print(f"No hay registros en SQL entre {start_date} y {end_date}. insertando nuevos registros")
             self.insert_process(dbf_results)
-        else:
-            result = 0
-            #the next method should be in this line
-            #it is outside the else for debugging 
-        #this method goes inside the else
+      
         comparison_result = self.comparator.compare_batch_by_day(dbf_records=dbf_results, sql_records=sql_records)
         
         self.print_comparison_results(comparison_result['detailed_comparison'])
@@ -93,8 +84,6 @@ class MatchesProcess:
         
         # Agregar hash MD5 a cada registro
         for i, record in enumerate(data):
-            # HARDCODED VALUES FOR DEBUGGING DELETE AFTER TESTING ----------------------------------------------------------------------------------------------------------------->>>>>>>>>
-            record['empleado'] = 500 if i == 110 else record['empleado']
             record_str = json.dumps(record, sort_keys=True)
             record['md5_hash'] = hashlib.md5(record_str.encode('utf-8')).hexdigest()
         
@@ -152,7 +141,7 @@ class MatchesProcess:
         
         for i, record in enumerate(dbf_result['data'], 1):  # Procesar todos los registros
             # Validar campos obligatorios (usando las mayúsculas exactas del DBF)
-            folio = record.get('Folio') # Mayúscula según el DBF --------------------------------------------------debug hardcoded value, delete after testing ----------------
+            folio = record.get('Folio') # Mayúscula según el DBF
             fecha = record.get('fecha')  # Minúscula según el DBF
             
             if not folio or not fecha:
