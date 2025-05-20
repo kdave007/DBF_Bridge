@@ -12,7 +12,7 @@ from src.config.dbf_config import DBFConfig
 print(f"PYTHONPATH: {sys.path}")  # Debug
 
 try:
-    from src.controllers.find_matches_process import MatchesProcess
+    from src.controllers.main_workflow import WorkFlow
 except ImportError as e:
     print(f"ImportError: {e}")
     raise
@@ -20,7 +20,7 @@ except ImportError as e:
 def main():
     print("=== Starting simple test for MatchesProcess ===")
     
-    processor = MatchesProcess()
+    process = WorkFlow()
     
     print("Calling compare_batches()...")
     try:
@@ -30,7 +30,7 @@ def main():
             source_directory=r"C:\\Users\\campo\\Documents\\projects\\DBF_encrypted\\pospcp",
             limit_rows=500  # Limit to 3 sales for testing
         )
-        result = processor.compare_batches(config)
+        result = process.start(config)
         if result:
             print("Test completed successfully!")
         else:

@@ -13,6 +13,7 @@ from src.dbf_enc_reader.mapping_manager import MappingManager
 from src.config.dbf_config import DBFConfig
 from src.models.ventas_model import VentasModel
 from src.controllers.dbf_sql_comparator import DBFSQLComparator
+from src.controllers.insertion_process import InsertionProcess
 
 class MatchesProcess:
 
@@ -26,8 +27,9 @@ class MatchesProcess:
             'port': '5432'
         }
         
-        # Initialize the comparator
+        # Initialize the comparator and insertion processor
         self.comparator = DBFSQLComparator(self.db_config)
+        self.insertion_processor = InsertionProcess(self.db_config)
 
     def compare_batches(self, config):
         
@@ -47,11 +49,9 @@ class MatchesProcess:
         if not sql_records:
             print(sql_records)
             print(f"No hay registros en SQL entre {start_date} y {end_date}. insertando nuevos registros")
-            self.insert_process(dbf_results)
+            self.insertion_processor.insert_batch(dbf_results)
       
         comparison_result = self.comparator.compare_batch_by_day(dbf_records=dbf_results, sql_records=sql_records)
-
-        print(f' ----- ')
         
         if  comparison_result.get('detailed_comparison'):
             self.print_comparison_results(comparison_result['detailed_comparison'])
@@ -116,87 +116,7 @@ class MatchesProcess:
         return tracker.get_records_by_date_range(start_date, end_date)
 
 
-    def insert_process(self, dbf_result):
-        """
-        Proceso completo de inserción usando transacción atómica
-        Nota: La tabla lotes ya no usa campo sublote
-        """
-        from src.db.postgres_tracking import PostgresTracking
-        from datetime import datetime
-        import logging
-        
-        db_config = {
-            'host': 'localhost',
-            'database': 'suc_vel',
-            'user': 'postgres',
-            'password': 'comexcare',
-            'port': '5432'
-        }
-        
-        tracker = PostgresTracking(db_config)
-        lote_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        # Preparar datos para inserción (todos los registros)
-        batch_data = []
-        valid_records = 0
-
-        print(f"Processing {len(dbf_result['data'])} records...")
-        
-        for i, record in enumerate(dbf_result['data'], 1):  # Procesar todos los registros
-            # Validar campos obligatorios (usando las mayúsculas exactas del DBF)
-            folio = record.get('Folio') # Mayúscula según el DBF
-            fecha = record.get('fecha')  # Minúscula según el DBF
-            
-            if not folio or not fecha:
-                logging.warning(f"Registro inválido - Folio: {folio}, Fecha: {fecha}. Datos completos: {record}")
-                continue
-                
-            try:
-                # Procesar fecha (formato: 'mm/dd/yyyy HH:MM:SS a. m./p. m.')
-                fecha_str = fecha.split()[0]  # Tomar solo la parte de la fecha
-                fecha_emision = datetime.strptime(fecha_str, '%m/%d/%Y').date()
-                print(f"Parsed date {fecha_str} as {fecha_emision} (MM/DD/YYYY format)")
-                
-                # Validar hash
-                md5_hash = record.get('md5_hash')
-                if not md5_hash or len(md5_hash) != 32:
-                    md5_hash = hashlib.md5(str(record).encode()).hexdigest()
-                    logging.warning(f"Hash inválido para folio {folio}. Generado nuevo hash")
-                
-                batch_data.append({
-                    'folio': folio,
-                    'total_partidas': len(record.get('detalles', [])) if record.get('detalles') is not None else 0,
-                    'descripcion': f"empleado : {record.get('empleado')}",
-                    'hash': md5_hash,
-                    'fecha_emision': fecha_emision
-                })
-                valid_records += 1
-                
-            except ValueError as e:
-                logging.warning(f"Error procesando registro {folio}: {str(e)}. Fecha: {fecha}")
-                continue
-        
-        if not valid_records:
-            logging.error("No hay registros válidos para insertar")
-            return False
-        
-        # Obtener fecha referencia del primer registro válido
-        fecha_referencia = batch_data[0]['fecha_emision']
-        
-        # Ejecutar transacción completa
-        success = tracker.insert_full_batch_transaction(
-            batch_data=batch_data,
-            lote_id=lote_id,
-            batch_hash=dbf_result['dataset_hash'],
-            fecha_referencia=fecha_referencia
-        )
-        
-        if success:
-            print(f"Proceso completado. Insertados {len(batch_data)} registros en lote {lote_id}")
-        else:
-            print("Error en el proceso de inserción")
-        
-        return success
+    # The insert_process method has been moved to the InsertionProcess class
 
     # Comparison methods have been moved to DBFSQLComparator class
 
@@ -219,7 +139,6 @@ class MatchesProcess:
         print(f"  CREATE: {summary.get('create_count', 0)} records")
         print(f"  UPDATE: {summary.get('update_count', 0)} records")
         print(f"  DELETE: {summary.get('delete_count', 0)} records")
-        print(f"  NO ACTION: {summary.get('matching_count', 0)} records")
         print(f"  TOTAL ACTIONS: {summary.get('total_actions_needed', 0)} operations\n")
         
         # Get API operations

@@ -183,15 +183,23 @@ class DBFSQLComparator:
                     })
             else:
                 # Store complete DBF-only records
-                in_dbf_only.append(dbf_record)
+                in_dbf_only.append({
+                    "folio": folio,
+                    "dbf_record": dbf_record,
+                    "dbf_hash": dbf_record.get('md5_hash')
+                })
                 
         # Check for records in SQL only
         for folio, sql_record in sql_records_by_folio.items():
             if folio not in dbf_records_by_folio:
                 # Store complete SQL-only records
-                in_sql_only.append(sql_record)
+                in_sql_only.append({
+                    "folio": folio,
+                    "sql_record": sql_record,
+                    "sql_hash": sql_record.get('hash')
+                })
                 
-        # Organize data by required API operations
+        # Organize data by required API operations - only include records that need action
         api_operations = {
             # Records to create (only in DBF, not in SQL)
             "create": in_dbf_only,
@@ -200,10 +208,9 @@ class DBFSQLComparator:
             "update": mismatched,
             
             # Records to delete (only in SQL, not in DBF)
-            "delete": in_sql_only,
+            "delete": in_sql_only
             
-            # Records that match (no action needed)
-            "no_action": matching
+            # No 'no_action' category since we only care about records that need action
         }
         
         return {
@@ -212,7 +219,6 @@ class DBFSQLComparator:
             "total_sql_records": len(sql_records_by_folio),
             "api_operations": api_operations,
             "summary": {
-                "matching_count": len(matching),
                 "create_count": len(in_dbf_only),
                 "update_count": len(mismatched),
                 "delete_count": len(in_sql_only),
