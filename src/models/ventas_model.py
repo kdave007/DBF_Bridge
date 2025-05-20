@@ -1,11 +1,10 @@
 from typing import Dict, Any, List
 from datetime import datetime
-import json
-from .base_model import BaseModel
 
-class VentasModel(BaseModel):
+
+class VentasModel():
     def __init__(self):
-        super().__init__()
+        
         self.table_name = "factura_venta"  # Header table
         self.chunk_size = 100
     

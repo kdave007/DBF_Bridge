@@ -1,11 +1,11 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from psycopg2.extensions import AsIs
-from .base_model import BaseModel
 
-class VentasTrackingModel(BaseModel):
+
+class VentasTrackingModel():
     def __init__(self):
-        super().__init__()
+    
         self.table_name = "estado_factura_venta"  # Tracking table
         self.chunk_size = 100
         # Reset the printed flag on init

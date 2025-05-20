@@ -50,8 +50,11 @@ class MatchesProcess:
             self.insert_process(dbf_results)
       
         comparison_result = self.comparator.compare_batch_by_day(dbf_records=dbf_results, sql_records=sql_records)
+
+        print(f' ----- ')
         
-        self.print_comparison_results(comparison_result['detailed_comparison'])
+        if  comparison_result.get('detailed_comparison'):
+            self.print_comparison_results(comparison_result['detailed_comparison'])
         
         # Return the full result for programmatic use
         return comparison_result

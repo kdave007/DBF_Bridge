@@ -1,8 +1,7 @@
 from typing import Dict, Any, List
-from .base_model import BaseModel
 import logging
 
-class VentasDetalleModel(BaseModel):
+class VentasDetalleModel():
     def __init__(self):
         super().__init__()
         self.table_name = "detalle_factura_venta"  # Detail table
