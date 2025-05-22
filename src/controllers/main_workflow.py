@@ -1,6 +1,7 @@
 
 from .find_matches_process import MatchesProcess
 from .api_request_process import APIRequestProcess
+from .after_response_process import AfterResponseProcess
 
 class WorkFlow:
     def start(self, config):
@@ -30,7 +31,16 @@ class WorkFlow:
         if result.get('detailed_comparison'):
             #print(f' api actions /////// { result['detailed_comparison']['api_operations']} //////////////////////////')
             api = APIRequestProcess()
-            api.execute_actions(result['detailed_comparison']['api_operations'])
-
+            result = api.execute_actions(result['detailed_comparison']['api_operations'])
+            # {
+            #     "update": update_results,
+            #     "delete": delete_results,
+            #     "create": add_results,
+            #     "total_success": sum(r.get("success", False) for r in update_results + delete_results + add_results),
+            #     "total_failed": sum(not r.get("success", False) for r in update_results + delete_results + add_results)
+            # }
+            after_response = AfterResponseProcess()
+            after_response(result)
+            
 
         return  result

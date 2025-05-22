@@ -77,7 +77,7 @@ class APIRequestProcess:
                 }
                 
                 # Make the API request
-                url = f"{self.base_url}/ventas/{sql_record.get('id')}"
+                url = f"{self.base_url}/{sql_record.get('id')}"
                 self.logger.info(f"Updating record with folio {folio}")
                 response = requests.put(url, headers=self.headers, json=payload)
                 
@@ -119,7 +119,7 @@ class APIRequestProcess:
                 sql_record = element.get("sql_record", {})
                 
                 # Make the API request
-                url = f"{self.base_url}/ventas/{sql_record.get('id')}"
+                url = f"{self.base_url}"
                 self.logger.info(f"Deleting record with folio {folio}")
                 response = requests.delete(url, headers=self.headers)
                 
@@ -171,7 +171,7 @@ class APIRequestProcess:
                 }
                 
                 # Make the API request
-                url = f"{self.base_url}/ventas"
+                url = f"{self.base_url}"
                 self.logger.info(f"Creating new record with folio {folio}")
                 response = requests.post(url, headers=self.headers, json=payload)
                 
@@ -202,5 +202,4 @@ class APIRequestProcess:
         
         return results
 
-    def update_lote_hash(self):
-        pass
+    

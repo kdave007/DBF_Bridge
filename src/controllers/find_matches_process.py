@@ -150,7 +150,7 @@ class MatchesProcess:
             print("\n=== SAMPLE RECORDS TO CREATE (DBF only) ===")
             for i, record in enumerate(create_records[:3], 1):
                 print(f"\nRecord #{i}:")
-                print(f"  Folio: {record.get('Folio')}")
+                print(f"  Folio: {record.get('folio')}")
                 if 'md5_hash' in record:
                     print(f"  Hash: {record.get('md5_hash')}")
                 if 'fecha' in record:

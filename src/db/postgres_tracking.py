@@ -41,7 +41,7 @@ class PostgresTracking:
                             descripcion: str,
                             hash: str,
                             id_lote: str,
-                            estado: str = 'ENVIAR',
+                            estado: str = 'pendiente',
                             fecha_emision: date = None) -> bool:
         """Actualiza o inserta estado de factura"""
         try:
@@ -251,7 +251,7 @@ class PostgresTracking:
                             record['hash'],
                             datetime.now().date(),
                             lote_id,
-                            'ENVIAR',
+                            'pendiente',
                             record['fecha_emision']
                         )
                         logging.debug(f"Query factura:\n{factura_query}\nParams: {factura_params}")
