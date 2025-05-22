@@ -27,6 +27,58 @@ class DBFSQLComparator:
             'port': '5432'
         }
         self.tracker = PostgresTracking(self.db_config)
+
+    def add_all(self, dbf_records: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Process all DBF records directly without SQL comparison.
+        
+        Args:
+            dbf_records: Dictionary containing DBF records data
+            
+        Returns:
+            Dictionary with records organized for API operations
+        """
+        # Create dictionaries for easy lookup with full records
+        # Store records by folio for quick lookup
+        dbf_records_by_folio = {}
+        in_dbf_only = []
+        
+        # Map DBF records by folio
+        for record in dbf_records['data']:
+            if record.get('Folio') and record.get('md5_hash'):
+                # Store the record in the lookup dictionary
+                folio = str(record.get('Folio'))
+                dbf_records_by_folio[folio] = record
+                
+                # Add to the list in the same format as compare_records_by_hash
+                in_dbf_only.append({
+                    "folio": folio,
+                    "dbf_record": record,
+                    "dbf_hash": record.get('md5_hash')
+                })
+                
+        # Organize data by required API operations (all are creates since we're not comparing)
+        api_operations = {
+            "create": in_dbf_only,
+            "update": [],
+            "delete": []
+        }
+        
+        return {
+            "status": "completed",
+            "total_dbf_records": len(dbf_records_by_folio),
+            "api_operations": api_operations,
+            "summary": {
+                "create_count": len(in_dbf_only),
+                "update_count": 0,
+                "delete_count": 0,
+                "total_actions_needed": len(in_dbf_only)
+            }
+        }
+        
+
+
+
     
     def compare_batch_by_day(self, dbf_records: Dict[str, Any], sql_records: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -102,19 +154,10 @@ class DBFSQLComparator:
         print(f"DBF Hash: {dbf_hash}")
         print(f"SQL Hash: {sql_hash}")
         
-        result = {
-            "matched": is_match,
-            "dbf_hash": dbf_hash,
-            "sql_hash": sql_hash,
-            "lote_id": lote_record.get('lote'),
-            "fecha_referencia": lote_record.get('fecha_referencia')
-        }
-        
-        # If batch hashes don't match, perform detailed record-by-record comparison
-        if not is_match:
-            print("Batch hashes don't match. Performing detailed record comparison...")
-            detailed_results = self.compare_records_by_hash(dbf_records, start_date=start_date, end_date=start_date)
-            result["detailed_comparison"] = detailed_results
+        # Perform record-by-record comparison directly instead of just checking batch hashes
+        # This ensures we always get the same structure as compare_records_by_hash
+        print("Performing record-by-record comparison...")
+        result = self.compare_records_by_hash(dbf_records, start_date=start_date, end_date=start_date)
             
         return result
     
@@ -155,26 +198,18 @@ class DBFSQLComparator:
                 sql_records_by_folio[str(record.get('folio'))] = record
         
         # Compare records
-        matching_pendiente = []  # Only track matching records with estado='pendiente'
-        mismatched = []
-        in_dbf_only = []
-        in_sql_only = []
+        mismatched = []  # Records to update
+        in_dbf_only = []  # Records to add
+        in_sql_only = []  # Records to delete
         
         # Check each DBF record
         for folio, dbf_record in dbf_records_by_folio.items():
             if folio in sql_records_by_folio:
                 sql_record = sql_records_by_folio[folio]
                 
-                # Compare hashes
-                if dbf_record.get('md5_hash') == sql_record.get('hash'):
-                    # Only track if estado is 'pendiente'
-                    if sql_record.get('estado') == 'pendiente':
-                        matching_pendiente.append({
-                            "dbf_record": dbf_record,
-                            "sql_record": sql_record
-                        })
-                else:
-                    # Store mismatched records
+                # Compare hashes - if different, it needs to be updated
+                if dbf_record.get('md5_hash') != sql_record.get('hash'):
+                    # Store mismatched records for update
                     mismatched.append({
                         "folio": folio,
                         "dbf_record": dbf_record,
@@ -183,7 +218,7 @@ class DBFSQLComparator:
                         "sql_hash": sql_record.get('hash')
                     })
             else:
-                # Store complete DBF-only records
+                # Store complete DBF-only records for creation
                 in_dbf_only.append({
                     "folio": folio,
                     "dbf_record": dbf_record,
@@ -217,8 +252,7 @@ class DBFSQLComparator:
                 "update_count": len(mismatched),
                 "delete_count": len(in_sql_only),
                 "total_actions_needed": len(in_dbf_only) + len(mismatched) + len(in_sql_only)
-            },
-            "matching_pendiente": matching_pendiente
+            }
         }
     
     def _calculate_md5(self, dbf_records: Dict[str, Any]) -> str:

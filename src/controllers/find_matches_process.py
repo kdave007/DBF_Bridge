@@ -31,7 +31,7 @@ class MatchesProcess:
         self.comparator = DBFSQLComparator(self.db_config)
         self.insertion_processor = InsertionProcess(self.db_config)
 
-    def compare_batches(self, config):
+    def compare_data(self, config):
         
         #TO DO : this config may be pass as a parameter and not defined here, but just for testing
        
@@ -47,14 +47,16 @@ class MatchesProcess:
         sql_records = self.get_sql_data(start_date, end_date)
         
         if not sql_records:
-            print(sql_records)
-            print(f"No hay registros en SQL entre {start_date} y {end_date}. insertando nuevos registros")
-            self.insertion_processor.insert_batch(dbf_results)
-      
-        comparison_result = self.comparator.compare_batch_by_day(dbf_records=dbf_results, sql_records=sql_records)
+            print(f"No hay registros en SQL entre {start_date} y {end_date}. Insertando nuevos registros")
+            # When no SQL records, use add_all to directly process all DBF records
+            comparison_result = self.comparator.add_all(dbf_records=dbf_results)
+        else:
+            # When SQL records exist, compare them with DBF records
+            comparison_result = self.comparator.compare_batch_by_day(dbf_records=dbf_results, sql_records=sql_records)
         
-        if  comparison_result.get('detailed_comparison'):
-            self.print_comparison_results(comparison_result['detailed_comparison'])
+        # Print summary of operations
+        self.print_comparison_results(comparison_result)
+        
         
         # Return the full result for programmatic use
         return comparison_result

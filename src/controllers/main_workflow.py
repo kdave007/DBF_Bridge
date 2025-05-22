@@ -1,13 +1,14 @@
 
+
 from .find_matches_process import MatchesProcess
 from .api_request_process import APIRequestProcess
-from .after_response_process import AfterResponseProcess
+from .send_request import SendRequest
 
 class WorkFlow:
     def start(self, config):
 
         self.matches_process = MatchesProcess()
-        result = self.matches_process.compare_batches(config)
+        result = self.matches_process.compare_data(config)
         # sample = {
         #     "matched": is_match,
         #     "dbf_hash": dbf_hash,
@@ -28,22 +29,23 @@ class WorkFlow:
         #          }
         #     }
         # }
-        if result.get('detailed_comparison'):
+        if result:
             #print(f' api actions /////// { result['detailed_comparison']['api_operations']} //////////////////////////')
-            api = APIRequestProcess()
-            result = api.execute_actions(result['detailed_comparison']['api_operations'])
-            # {
-            #     "update": update_results,
-            #     "delete": delete_results,
-            #     "create": add_results,
-            #     "total_success": sum(r.get("success", False) for r in update_results + delete_results + add_results),
-            #     "total_failed": sum(not r.get("success", False) for r in update_results + delete_results + add_results)
-            # }
 
 
             
-            after_response = AfterResponseProcess()
-            after_response.update_db(result)
+            # api = APIRequestProcess()
+            # result = api.execute_actions(result['api_operations'])
+            # # {
+            # #     "update": update_results,
+            # #     "delete": delete_results,
+            # #     "create": add_results,
+            # #     "total_success": sum(r.get("success", False) for r in update_results + delete_results + add_results),
+            # #     "total_failed": sum(not r.get("success", False) for r in update_results + delete_results + add_results)
+            # # }
+
+            send_request = SendRequest()
+            send_request.update_db(result['api_operations'])
             
 
         return  result
