@@ -5,6 +5,16 @@ import requests
 from typing import Dict, List, Any, Optional
 from datetime import datetime, date
 import logging
+from decimal import Decimal
+
+# Custom JSON encoder to handle Decimal, datetime and date objects
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return int(obj) if obj % 1 == 0 else float(obj)
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 class APIRequestProcess:
@@ -79,7 +89,9 @@ class APIRequestProcess:
                 # Make the API request
                 url = f"{self.base_url}/{sql_record.get('id')}"
                 self.logger.info(f"Updating record with folio {folio}")
-                response = requests.put(url, headers=self.headers, json=payload)
+                # Convert payload to JSON string using custom encoder
+                payload_json = json.dumps(payload, cls=CustomJSONEncoder)
+                response = requests.put(url, headers=self.headers, data=payload_json)
                 
                 # Check if the request was successful
                 if response.status_code in [200, 201, 204]:
@@ -173,7 +185,9 @@ class APIRequestProcess:
                 # Make the API request
                 url = f"{self.base_url}"
                 self.logger.info(f"Creating new record with folio {folio}")
-                response = requests.post(url, headers=self.headers, json=payload)
+                # Convert payload to JSON string using custom encoder
+                payload_json = json.dumps(payload, cls=CustomJSONEncoder)
+                response = requests.post(url, headers=self.headers, data=payload_json)
                 
                 # Check if the request was successful
                 if response.status_code in [200, 201, 204]:

@@ -39,8 +39,11 @@ class WorkFlow:
             #     "total_success": sum(r.get("success", False) for r in update_results + delete_results + add_results),
             #     "total_failed": sum(not r.get("success", False) for r in update_results + delete_results + add_results)
             # }
+
+
+            
             after_response = AfterResponseProcess()
-            after_response(result)
+            after_response.update_db(result)
             
 
         return  result

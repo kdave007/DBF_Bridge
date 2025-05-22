@@ -27,14 +27,14 @@ def main():
     url_source_A = r"C:\Users\gtdri\Documents\projects\care\DBF_Bridge\pospcp"
     url_dll_A = r"C:\Users\gtdri\Documents\projects\care\DBF_Bridge\Advantage.Data.Provider.dll"
 
-    url_dll_B=r"C:\\Program Files (x86)\\Advantage 10.10\\ado.net\\1.0\\Advantage.Data.Provider.dll",
-    url_source_B=r"C:\\Users\\campo\\Documents\\projects\\DBF_encrypted\\pospcp",
+    url_dll_B=r"C:\Users\campo\Documents\projects\DBF_Bridge\Advantage.Data.Provider.dll"
+    url_source_B=r"C:\Users\campo\Documents\projects\DBF_encrypted\pospcp"
 
     try:
         config = DBFConfig(
-            dll_path=url_dll_A,
+            dll_path=url_dll_B,
             encryption_password="X3WGTXG5QJZ6K9ZC4VO2",
-            source_directory=url_source_A,
+            source_directory=url_source_B,
             limit_rows=500  # Limit to 3 sales for testing
         )
         result = process.start(config)
