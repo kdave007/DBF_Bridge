@@ -155,7 +155,7 @@ class DBFSQLComparator:
                 sql_records_by_folio[str(record.get('folio'))] = record
         
         # Compare records
-        matching = []
+        matching_pendiente = []  # Only track matching records with estado='pendiente'
         mismatched = []
         in_dbf_only = []
         in_sql_only = []
@@ -167,13 +167,14 @@ class DBFSQLComparator:
                 
                 # Compare hashes
                 if dbf_record.get('md5_hash') == sql_record.get('hash'):
-                    # Store complete matching records
-                    matching.append({
-                        "dbf_record": dbf_record,
-                        "sql_record": sql_record
-                    })
+                    # Only track if estado is 'pendiente'
+                    if sql_record.get('estado') == 'pendiente':
+                        matching_pendiente.append({
+                            "dbf_record": dbf_record,
+                            "sql_record": sql_record
+                        })
                 else:
-                    # Store complete mismatched records
+                    # Store mismatched records
                     mismatched.append({
                         "folio": folio,
                         "dbf_record": dbf_record,
@@ -199,18 +200,11 @@ class DBFSQLComparator:
                     "sql_hash": sql_record.get('hash')
                 })
                 
-        # Organize data by required API operations - only include records that need action
+        # Organize data by required API operations
         api_operations = {
-            # Records to create (only in DBF, not in SQL)
             "create": in_dbf_only,
-            
-            # Records to update (in both DBF and SQL but with different hashes)
             "update": mismatched,
-            
-            # Records to delete (only in SQL, not in DBF)
             "delete": in_sql_only
-            
-            # No 'no_action' category since we only care about records that need action
         }
         
         return {
@@ -223,7 +217,8 @@ class DBFSQLComparator:
                 "update_count": len(mismatched),
                 "delete_count": len(in_sql_only),
                 "total_actions_needed": len(in_dbf_only) + len(mismatched) + len(in_sql_only)
-            }
+            },
+            "matching_pendiente": matching_pendiente
         }
     
     def _calculate_md5(self, dbf_records: Dict[str, Any]) -> str:
