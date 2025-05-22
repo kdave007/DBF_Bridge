@@ -40,26 +40,34 @@ class SendRequest:
         updates = responses_dict.get('update', [])
         deletes = responses_dict.get('delete', [])
         
+
+        # Initialize results dictionary
+        results = {
+            'create': {},
+            'update': {},
+            'delete': {}
+        }
         
         # Process in batches
         if creates:
             result_create = self.create(creates)
+            results['create'] = result_create
             print("Creates:")
             print(json.dumps(result_create, indent=4, cls=self.json_encoder))
 
         if updates:    
             result_update = self.update(updates)
+            results['update'] = result_update
             print("Updates:")
             print(json.dumps(result_update, indent=4, cls=self.json_encoder))
 
         if deletes:
             result_delete = self.delete(deletes)
+            results['delete'] = result_delete
             print("Deletes:")
             print(json.dumps(result_delete, indent=4, cls=self.json_encoder))
-            
         
-        
-        return { result_create, result_delete, result_update }
+        return results
 
     def create(self, creates):
         results = {
@@ -371,90 +379,6 @@ class SendRequest:
                     self.request_pending(results['failed'][folio])
 
         return results
-
-
-    def request_completed(self, request_response):
-        """Mark a request as completed in the database"""
-        folio = request_response.get("folio")
-        print(f'Completed: {folio}')
-        
-        # Get additional data from the request response
-        dbf_record = request_response.get("dbf_record", {})
-        total_partidas = len(dbf_record.get("detalles", [])) if dbf_record else 0
-        hash_value = request_response.get("dbf_hash", "")
-        status_code = request_response.get("status_code", 200)
-        
-        # Create a description based on the status code
-        descripcion = f"Successfully processed with status {status_code}"
-        
-        # Get current date for fecha_emision if not available
-        from datetime import datetime
-        fecha_emision = datetime.now().date()
-        if dbf_record and "fecha" in dbf_record:
-            try:
-                fecha_str = dbf_record.get("fecha")
-                fecha_formats = ['%m/%d/%Y %I:%M:%S %p', '%m/%d/%Y', '%Y-%m-%d']
-                for fmt in fecha_formats:
-                    try:
-                        fecha_emision = datetime.strptime(fecha_str, fmt).date()
-                        break
-                    except ValueError:
-                        continue
-            except Exception as e:
-                print(f"Error parsing date: {e}")
-        
-        # Update the status in the database
-        self.response_tracking.update_status(
-            folio=folio,
-            total_partidas=total_partidas,
-            descripcion=descripcion,
-            hash=hash_value,
-            id_lote=request_response.get("id_lote", "auto"),
-            estado="completado",
-            fecha_emision=fecha_emision
-        )
-
-    def request_pending(self, request_response):
-        """Mark a request as pending or failed in the database"""
-        folio = request_response.get("folio")
-        print(f'Pending/Failed: {folio}')
-        
-        # Get additional data from the request response
-        dbf_record = request_response.get("dbf_record", {})
-        total_partidas = len(dbf_record.get("detalles", [])) if dbf_record else 0
-        hash_value = request_response.get("dbf_hash", "")
-        error = request_response.get("error", "Unknown error")
-        status_code = request_response.get("status_code", 0)
-        
-        # Create a description based on the error
-        descripcion = f"Failed with status {status_code}: {error}"
-        
-        # Get current date for fecha_emision if not available
-        from datetime import datetime
-        fecha_emision = datetime.now().date()
-        if dbf_record and "fecha" in dbf_record:
-            try:
-                fecha_str = dbf_record.get("fecha")
-                fecha_formats = ['%m/%d/%Y %I:%M:%S %p', '%m/%d/%Y', '%Y-%m-%d']
-                for fmt in fecha_formats:
-                    try:
-                        fecha_emision = datetime.strptime(fecha_str, fmt).date()
-                        break
-                    except ValueError:
-                        continue
-            except Exception as e:
-                print(f"Error parsing date: {e}")
-        
-        # Update the status in the database
-        self.response_tracking.update_status(
-            folio=folio,
-            total_partidas=total_partidas,
-            descripcion=descripcion,
-            hash=hash_value,
-            id_lote=request_response.get("id_lote", "auto"),
-            estado="pendiente",
-            fecha_emision=fecha_emision
-        )
 
     def update_lote_hash(self):
         pass

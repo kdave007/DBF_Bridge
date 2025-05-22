@@ -45,7 +45,9 @@ class WorkFlow:
             # # }
 
             send_request = SendRequest()
-            send_request.update_db(result['api_operations'])
+            requests_results = send_request.update_db(result['api_operations'])
+
+            print(requests_results)
             
 
         return  result
