@@ -1,7 +1,7 @@
 
 
 from .find_matches_process import MatchesProcess
-from .api_request_process import APIRequestProcess
+from .api_response_tracking import APIResponseTracking
 from .send_request import SendRequest
 
 class WorkFlow:
@@ -31,9 +31,6 @@ class WorkFlow:
         # }
         if result:
             #print(f' api actions /////// { result['detailed_comparison']['api_operations']} //////////////////////////')
-
-
-            
             # api = APIRequestProcess()
             # result = api.execute_actions(result['api_operations'])
             # # {
@@ -45,9 +42,11 @@ class WorkFlow:
             # # }
 
             send_request = SendRequest()
-            requests_results = send_request.update_db(result['api_operations'])
+            requests_results = send_request.send(result['api_operations'])
 
-            print(requests_results)
+            api_tracker = APIResponseTracking()
+            api_tracker.update_tracker(requests_results)
+            
             
 
         return  result

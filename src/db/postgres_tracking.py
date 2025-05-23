@@ -18,7 +18,7 @@ class PostgresTracking:
                 with conn.cursor() as cursor:
                     base_query = sql.SQL("""
                         SELECT id, folio, total_partidas, descripcion, 
-                               hash, fecha_procesamiento, id_lote, estado
+                               hash, fecha_procesamiento, id_lote, estado, fecha_emision, accion
                         FROM estado_factura_venta
                     """)
                     
@@ -115,8 +115,8 @@ class PostgresTracking:
         import psycopg2
         
         query = """
-            SELECT id, folio, total_partidas, descripcion,
-                   hash, fecha_procesamiento, id_lote, estado, fecha_emision
+            SELECT id, folio, total_partidas,
+                   hash, fecha_procesamiento,estado, fecha_emision
             FROM estado_factura_venta
             WHERE fecha_emision BETWEEN %s AND %s
             ORDER BY fecha_emision

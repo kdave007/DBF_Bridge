@@ -12,10 +12,9 @@ class ResponseTracking:
     def update_status(self, 
                         folio: str, 
                         total_partidas: int,
-                        descripcion: str,
                         hash: str,
-                        id_lote: str,
                         estado: str,
+                        accion: str,
                         fecha_emision: date) -> bool:
         """Actualiza o inserta estado de factura"""
         try:
@@ -24,16 +23,30 @@ class ResponseTracking:
                     # Insert o update si existe
                     query = sql.SQL("""
                         INSERT INTO estado_factura_venta (
-                            folio, total_partidas, descripcion,
-                            hash, fecha_procesamiento, id_lote, estado, fecha_emision
-                        ) VALUES (%s, %s, %s, %s, %s::date, %s, %s, %s)
+                            folio, total_partidas, hash,
+                            fecha_procesamiento, estado, fecha_emision, accion
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                         ON CONFLICT (folio) DO UPDATE SET
                             estado = EXCLUDED.estado,
-                            fecha_procesamiento = %s::date
+                            hash = EXCLUDED.hash,
+                            accion = EXCLUDED.accion,
+                            fecha_procesamiento = %s,
+                            total_partidas = EXCLUDED.total_partidas,
+                            fecha_emision = EXCLUDED.fecha_emision
                         RETURNING id
                     """)
                     
-                    params = (folio, total_partidas, descripcion, hash, datetime.now().date(), id_lote, estado, fecha_emision, datetime.now().date())
+                    current_date = datetime.now().date()
+                    params = (
+                        folio, 
+                        total_partidas, 
+                        hash, 
+                        current_date, 
+                        estado, 
+                        fecha_emision, 
+                        accion,
+                        current_date  # For the update
+                    )
                     cursor.execute(query, params)
                     
                     # Si se insertó, retornará el id

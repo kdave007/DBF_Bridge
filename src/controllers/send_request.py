@@ -6,9 +6,18 @@ from src.db import response_tracking
 from src.db.response_tracking import ResponseTracking
 import requests
 import json
-from src.controllers.api_request_process import CustomJSONEncoder
+
+
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return int(obj) if obj % 1 == 0 else float(obj)
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super().default(obj)
 
 class SendRequest:
+
     def __init__(self):
         db_config = {
             'host': 'localhost',
@@ -19,7 +28,7 @@ class SendRequest:
         }
         self.response_tracking = ResponseTracking(db_config)
 
-    def update_db(self, responses_dict):
+    def send(self, responses_dict):
         """Process API operations in batches of 100 and track results"""
         # responses_dict contains API operation results (update, delete, create)
         if not responses_dict:
@@ -71,8 +80,8 @@ class SendRequest:
 
     def create(self, creates):
         results = {
-            'success': {},  # Will store folio -> result for successful operations
-            'failed': {}   # Will store folio -> result for failed operations
+            'success': [],  # Will store folio -> result for successful operations
+            'failed': []   # Will store folio -> result for failed operations
         }
         
         print(f"Processing {len(creates)} create operations in batches of {self.batch_size}")
@@ -83,8 +92,13 @@ class SendRequest:
             try:
                 # Prepare batch payload
                 batch_payload = []
+                folio_to_item = {}
+
                 for item in batch:
+                   
                     folio = item.get('folio')
+
+                    folio_to_item[folio] = item
                     dbf_record = item.get('dbf_record', {})
                     batch_payload.append({
                         "folio": folio,
@@ -99,75 +113,66 @@ class SendRequest:
                 response = requests.post(
                     f"{self.base_url}", 
                     headers=self.headers, 
-                    data=json.dumps({"records": batch_payload}, cls=CustomJSONEncoder)
+                    data=json.dumps(batch_payload, cls=CustomJSONEncoder)
                 )
+                
                 
                 # Process batch response
                 if response.status_code in [200, 201, 202, 204]:
-                    # The API should return a response with status for each record
                     batch_response = response.json()
-                    batch_results = batch_response.get("results", [])
-                    
-                    # Process each result in the batch response
-                    for idx, result_data in enumerate(batch_results):
-                        if idx < len(batch):  # Safety check
-                            item = batch[idx]
-                            folio = item.get('folio')
-                            
-                            # Create result object
-                            result = {
-                                "folio": folio,
-                                "status_code": response.status_code,
-                                "operation": "create",
-                                "dbf_hash": item.get("dbf_hash", ""),
-                            }
-                            
-                            # Check individual record success
-                            if result_data.get("success", False):
-                                result["success"] = True
-                                results['success'][folio] = result
-                                self.request_completed(result)
-                                print(f"Successfully created record with folio {folio}")
-                            else:
-                                result["success"] = False
-                                result["error"] = result_data.get("error", "Unknown error")
-                                results['failed'][folio] = result
-                                self.request_pending(result)
-                                print(f"Failed to create record with folio {folio}: {result['error']}")
-                else:
-                    # If the batch request failed entirely
-                    error_message = f"Batch create failed with status {response.status_code}: {response.text}"
-                    print(error_message)
-                    
-                    # Mark all records in the batch as failed
-                    for item in batch:
+                   
+
+                    for item in batch_response:
+                        # The API should return a response with status for each record
                         folio = item.get('folio')
-                        result = {
-                            "folio": folio,
-                            "status_code": response.status_code,
-                            "operation": "create",
-                            "dbf_hash": item.get("dbf_hash", ""),
-                            "success": False,
-                            "error": error_message
-                        }
-                        results['failed'][folio] = result
-                        self.request_pending(result)
+        
+                        # Get the original item with hash and fecha
+                        original_item = folio_to_item.get(folio)
+                        dbf_record = original_item.get('dbf_record', {})
+                        results['success'].append({
+                            'folio': item.get('folio'), 
+                            'fecha_emision': dbf_record.get('fecha'),
+                            'total_partidas': len(dbf_record.get('detalles')),
+                            'hash': original_item.get('dbf_hash', ''),
+                            'status': response.status_code
+                            })
+        
+                else:
+                    for item in batch_payload:
+                        folio = item.get('folio')
+    
+                        # Get the original item with hash and fecha
+                        original_item = folio_to_item.get(folio)
+                        dbf_record = original_item.get('dbf_record', {})
+
+                        error_message = f"Batch create failed with status {response.status_code}: {response.text}"
+                        print(f'original_item {original_item}')
+                        results['failed'].append({
+                            'folio': item.get('folio'),
+                            'fecha_emision':  dbf_record.get('fecha'),
+                            'total_partidas': len(dbf_record.get('detalles')),
+                            'hash': original_item.get('dbf_hash', ''),
+                            'status': response.status_code,
+                            'error_msg':error_message
+                            })
                         
             except Exception as e:
                 error_message = f"Exception during batch create: {str(e)}"
-                print(error_message)
-                
+              
                 # Mark all records in the batch as failed
-                for item in batch:
-                    folio = item.get('folio')
-                    results['failed'][folio] = {
-                        "folio": folio,
-                        "success": False,
-                        "error": error_message,
-                        "operation": "create",
-                        "dbf_hash": item.get("dbf_hash", "")
-                    }
-                    #self.request_pending(results['failed'][folio])
+                for item in batch_payload:
+                        original_item = folio_to_item.get(folio)
+                        dbf_record = original_item.get('dbf_record', {})
+                        error_message = f"Batch create failed with status {response.status_code}: {response.text}"
+                        
+                        results['failed'].append({
+                            'folio': item.get('folio'), 
+                            'fecha_emision':  dbf_record.get('fecha'),
+                            'hash': original_item.get('dbf_hash', ''),
+                            'status': None,
+                            'error_msg':error_message
+                            })
+                  
         return results
 
     def update(self, updates):
@@ -182,21 +187,17 @@ class SendRequest:
             print(f"Processing update batch {i//self.batch_size + 1} with {len(batch)} operations")
             
             try:
-                # Prepare batch payload
+                 # Prepare batch payload
                 batch_payload = []
-                batch_id_map = {}  # Map to store index -> sql_id for response processing
-                
-                for idx, item in enumerate(batch):
+                folio_to_item = {}
+
+                for item in batch:
+                   
                     folio = item.get('folio')
+
+                    folio_to_item[folio] = item
                     dbf_record = item.get('dbf_record', {})
-                    sql_record = item.get('sql_record', {})
-                    sql_id = sql_record.get('id')
-                    
-                    # Store the SQL ID for this index
-                    batch_id_map[idx] = sql_id
-                    
                     batch_payload.append({
-                        "id": folio,
                         "folio": folio,
                         "cabecera": dbf_record.get("Cabecera"),
                         "cliente": dbf_record.get("cliente"),
@@ -209,82 +210,69 @@ class SendRequest:
                 response = requests.post(
                     f"{self.base_url}", 
                     headers=self.headers, 
-                    data=json.dumps({"records": batch_payload}, cls=CustomJSONEncoder)
+                    data=json.dumps(batch_payload, cls=CustomJSONEncoder)
                 )
                 
-                # Process batch response
                 if response.status_code in [200, 201, 202, 204]:
-                    # The API should return a response with status for each record
                     batch_response = response.json()
-                    batch_results = batch_response.get("results", [])
                     
-                    # Process each result in the batch response
-                    for idx, result_data in enumerate(batch_results):
-                        if idx < len(batch):  # Safety check
-                            item = batch[idx]
-                            folio = item.get('folio')
-                            
-                            # Create result object
-                            result = {
-                                "folio": folio,
-                                "status_code": response.status_code,
-                                "operation": "update",
-                                "dbf_hash": item.get("dbf_hash", ""),
-                                
-                            }
-                            
-                            # Check individual record success
-                            if result_data.get("success", False):
-                                result["success"] = True
-                                results['success'][folio] = result
-                                self.request_completed(result)
-                                print(f"Successfully updated record with folio {folio}")
-                            else:
-                                result["success"] = False
-                                result["error"] = result_data.get("error", "Unknown error")
-                                results['failed'][folio] = result
-                                self.request_pending(result)
-                                print(f"Failed to update record with folio {folio}: {result['error']}")
-                else:
-                    # If the batch request failed entirely
-                    error_message = f"Batch update failed with status {response.status_code}: {response.text}"
-                    print(error_message)
                     
-                    # Mark all records in the batch as failed
-                    for item in batch:
+                    for item in batch_response:
+                        # The API should return a response with status for each record
                         folio = item.get('folio')
-                        result = {
-                            "folio": folio,
-                            "status_code": response.status_code,
-                            "operation": "update",
-                            "dbf_hash": item.get("dbf_hash", ""),
-                           
-                            "success": False,
-                            "error": error_message
-                        }
-                        results['failed'][folio] = result
-                        self.request_pending(result)
+        
+                        # Get the original item with hash and fecha
+                        original_item = folio_to_item.get(folio)
+                        dbf_record = original_item.get('dbf_record', {})
+                        results['success'].append({
+                            'folio': item.get('folio'), 
+                            'fecha_emision': dbf_record.get('fecha'),
+                            'total_partidas': len(dbf_record.get('detalles')),
+                            'hash': original_item.get('dbf_hash', ''),
+                            'status': response.status_code
+                            })
+                else:
+                    for item in batch_payload:
+                        folio = item.get('folio')
+    
+                        # Get the original item with hash and fecha
+                        original_item = folio_to_item.get(folio)
+                        dbf_record = original_item.get('dbf_record', {})
+
+                        error_message = f"Batch create failed with status {response.status_code}: {response.text}"
+                        print(f'original_item {original_item}')
+                        results['failed'].append({
+                            'folio': item.get('folio'),
+                            'fecha_emision':  dbf_record.get('fecha'),
+                            'total_partidas': len(dbf_record.get('detalles')),
+                            'hash': original_item.get('dbf_hash', ''),
+                            'status': response.status_code,
+                            'error_msg':error_message
+                            })
+        
                         
             except Exception as e:
-                error_message = f"Exception during batch update: {str(e)}"
-                print(error_message)
-                
+                error_message = f"Exception during batch create: {str(e)}"
+              
                 # Mark all records in the batch as failed
-                for item in batch:
-                    folio = item.get('folio')
-                    results['failed'][folio] = {
-                        "folio": folio,
-                        "success": False,
-                        "error": error_message,
-                        "operation": "update",
+                for item in batch_payload:
+                        original_item = folio_to_item.get(folio)
+                        dbf_record = original_item.get('dbf_record', {})
+                        error_message = f"Batch create failed with status {response.status_code}: {response.text}"
                         
-                        "dbf_hash": item.get("dbf_hash", "")
-                    }
-                    self.request_pending(results['failed'][folio])
+                        results['failed'].append({
+                            'folio': item.get('folio'), 
+                            'fecha_emision':  dbf_record.get('fecha'),
+                            'total_partidas': len(dbf_record.get('detalles')),
+                            'hash': original_item.get('dbf_hash', ''),
+                            'status': None,
+                            'error_msg':error_message
+                            })
+                  
 
         return results
 
-    def delete(self, deletes):
+    def delete(self, deletes):# TO DO : update whole method <------------------------------------------------------
         results = {
             'success': {},  # Will store folio -> result for successful operations
             'failed': {}   # Will store folio -> result for failed operations
@@ -296,87 +284,74 @@ class SendRequest:
             print(f"Processing delete batch {i//self.batch_size + 1} with {len(batch)} operations")
             
             try:
-                # Prepare batch payload with IDs to delete
+                # Prepare batch payload
                 batch_payload = []
+                folio_to_item = {}
+
                 for item in batch:
-                    sql_record = item.get('sql_record', {})
-                    sql_id = sql_record.get('id')
-                    if sql_id:
-                        batch_payload.append({"id": sql_id})
+                   
+                    folio = item.get('folio')
+
+                    folio_to_item[folio] = item
+                    dbf_record = item.get('dbf_record', {})
+                    batch_payload.append({
+                        "folio": folio,
+                        "cabecera": dbf_record.get("Cabecera"),
+                        "cliente": dbf_record.get("cliente"),
+                        "empleado": dbf_record.get("empleado"),
+                        "fecha": dbf_record.get("fecha"),
+                        "total_bruto": dbf_record.get("total_bruto")
+                    })
                 
                 # Make batch DELETE request
                 response = requests.delete(
                     f"{self.base_url}", 
                     headers=self.headers,
-                    data=json.dumps({"records": batch_payload}, cls=self.json_encoder)
+                    data=json.dumps(batch_payload, cls=self.json_encoder)
                 )
                 
-                # Process batch response
                 if response.status_code in [200, 201, 202, 204]:
-                    # The API should return a response with status for each record
                     batch_response = response.json()
-                    batch_results = batch_response.get("results", [])
-                    
-                    # Process each result in the batch response
-                    for idx, result_data in enumerate(batch_results):
-                        if idx < len(batch):  # Safety check
-                            item = batch[idx]
-                            folio = item.get('folio')
-                            
-                            # Create result object
-                            result = {
-                                "folio": folio,
-                                "status_code": response.status_code,
-                                "operation": "delete",
-                                "sql_hash": item.get("sql_hash", "")
-                            }
-                            
-                            # Check individual record success
-                            if result_data.get("success", False):
-                                result["success"] = True
-                                results['success'][folio] = result
-                                self.request_completed(result)
-                                print(f"Successfully deleted record with folio {folio}")
-                            else:
-                                result["success"] = False
-                                result["error"] = result_data.get("error", "Unknown error")
-                                results['failed'][folio] = result
-                                self.request_pending(result)
-                                print(f"Failed to delete record with folio {folio}: {result['error']}")
+                    # The API should return a response with status for each record
+                    folio = item.get('folio')
+    
+                    # Get the original item with hash and fecha
+                    original_item = folio_to_item.get(folio)
+                    dbf_record = original_item.get('dbf_record', {})
+
+                    for item in batch_response:
+                        print(f'item {item}')
+                        results['success'].append({
+                            'folio': item.get('folio'), 
+                            'fecha_emision': dbf_record.get('fecha'),
+                            'total_partidas': len(dbf_record.get('detalles')),
+                            'hash': original_item.get('dbf_hash', ''),
+                            'status': response.status_code
+                            })
+        
                 else:
-                    # If the batch request failed entirely
-                    error_message = f"Batch delete failed with status {response.status_code}: {response.text}"
-                    print(error_message)
-                    
-                    # Mark all records in the batch as failed
-                    for item in batch:
-                        folio = item.get('folio')
-                        result = {
-                            "folio": folio,
-                            "status_code": response.status_code,
-                            "operation": "delete",
-                            "sql_hash": item.get("sql_hash", ""),
-                            "success": False,
-                            "error": error_message
-                        }
-                        results['failed'][folio] = result
-                        self.request_pending(result)
+                    for item in batch_payload:
+                        error_message = f"Batch create failed with status {response.status_code}: {response.text}"
+                        print(f'item {item}')
+                        results['failed'].append({
+                            'folio': item.get('folio'), 
+                            'status': response.status_code,
+                            'error_msg':error_message
+                            })
                         
             except Exception as e:
-                error_message = f"Exception during batch delete: {str(e)}"
-                print(error_message)
-                
+                error_message = f"Exception during batch create: {str(e)}"
+              
                 # Mark all records in the batch as failed
-                for item in batch:
-                    folio = item.get('folio')
-                    results['failed'][folio] = {
-                        "folio": folio,
-                        "success": False,
-                        "error": error_message,
-                        "operation": "delete",
-                        "sql_hash": item.get("sql_hash", "")
-                    }
-                    self.request_pending(results['failed'][folio])
+                for item in batch_payload:
+                        error_message = f"Batch create failed with status {response.status_code}: {response.text}"
+                        print(f'item {item}')
+                        results['failed'].append({
+                            'folio': item.get('folio'), 
+                            'status': None,
+                            'error_msg':error_message
+                            })
+                  
 
         return results
 
