@@ -35,13 +35,23 @@ class MatchesProcess:
         
         #TO DO : this config may be pass as a parameter and not defined here, but just for testing
        
-        # Test date range (April 19-20, 2025)
-        start_date = datetime(2025, 5, 5)# yyyy, dd, mm
-        end_date = datetime(2025, 5, 5)
+        # Test date range using a date we know exists in the DBF
+        # From the image you shared, we can see a record with date 20/03/2025
+        # Let's use exactly that date for our test
+        # Note: The date in the DBF is in DD/MM/YYYY format
+        
+        # Let's try with the exact date from your screenshot: 20/03/2025
+        start_date = datetime(2025, 4, 21, 0, 0, 0)  # March 20, 2025
+        end_date = datetime(2025, 4, 21, 23, 59, 59)  # March 20, 2025
+        
+        # Print the exact format we're looking for to help debug
+        print(f"Looking for records with date exactly matching: 20/03/2025")
         
         
         #fetch dbf data
         dbf_results = self.get_dbf_data(config, start_date, end_date)
+
+        print(dbf_results)
         
         # Obtener registros SQL
         sql_records = self.get_sql_data(start_date, end_date)
@@ -127,9 +137,9 @@ class MatchesProcess:
         print("=== API OPERATIONS SUMMARY ===")
         print("=================================================\n")
         
-        # More debug prints
-        print(f"DEBUG: detailed_comparison type: {type(detailed_comparison)}")
-        print(f"DEBUG: detailed_comparison content: {detailed_comparison}")
+        # # More debug prints
+        # print(f"DEBUG: detailed_comparison type: {type(detailed_comparison)}")
+        # print(f"DEBUG: detailed_comparison content: {detailed_comparison}")
         
         # Print summary statistics
         summary = detailed_comparison.get('summary', {})
@@ -147,43 +157,43 @@ class MatchesProcess:
         api_ops = detailed_comparison.get('api_operations', {})
         
         # Print sample of records to create (DBF only)
-        create_records = api_ops.get('create', [])
-        if create_records:
-            print("\n=== SAMPLE RECORDS TO CREATE (DBF only) ===")
-            for i, record in enumerate(create_records[:3], 1):
-                print(f"\nRecord #{i}:")
-                print(f"  Folio: {record.get('folio')}")
-                if 'md5_hash' in record:
-                    print(f"  Hash: {record.get('md5_hash')}")
-                if 'fecha' in record:
-                    print(f"  Fecha: {record.get('fecha')}")
-            if len(create_records) > 3:
-                print(f"\n... and {len(create_records) - 3} more records to create")
+        # create_records = api_ops.get('create', [])
+        # if create_records:
+        #     print("\n=== SAMPLE RECORDS TO CREATE (DBF only) ===")
+        #     for i, record in enumerate(create_records[:3], 1):
+        #         print(f"\nRecord #{i}:")
+        #         print(f"  Folio: {record.get('folio')}")
+        #         if 'md5_hash' in record:
+        #             print(f"  Hash: {record.get('md5_hash')}")
+        #         if 'fecha' in record:
+        #             print(f"  Fecha: {record.get('fecha')}")
+        #     if len(create_records) > 3:
+        #         print(f"\n... and {len(create_records) - 3} more records to create")
         
-        # Print sample of records to update (mismatched)
-        update_records = api_ops.get('update', [])
-        if update_records:
-            print("\n=== SAMPLE RECORDS TO UPDATE (hash mismatch) ===")
-            for i, record in enumerate(update_records[:3], 1):
-                print(f"\nRecord #{i}:")
-                print(f"  Folio: {record.get('folio')}")
-                print(f"  DBF Hash: {record.get('dbf_hash')}")
-                print(f"  SQL Hash: {record.get('sql_hash')}")
-            if len(update_records) > 3:
-                print(f"\n... and {len(update_records) - 3} more records to update")
+        # # Print sample of records to update (mismatched)
+        # update_records = api_ops.get('update', [])
+        # if update_records:
+        #     print("\n=== SAMPLE RECORDS TO UPDATE (hash mismatch) ===")
+        #     for i, record in enumerate(update_records[:3], 1):
+        #         print(f"\nRecord #{i}:")
+        #         print(f"  Folio: {record.get('folio')}")
+        #         print(f"  DBF Hash: {record.get('dbf_hash')}")
+        #         print(f"  SQL Hash: {record.get('sql_hash')}")
+        #     if len(update_records) > 3:
+        #         print(f"\n... and {len(update_records) - 3} more records to update")
         
-        # Print sample of records to delete (SQL only)
-        delete_records = api_ops.get('delete', [])
-        if delete_records:
-            print("\n=== SAMPLE RECORDS TO DELETE (SQL only) ===")
-            for i, record in enumerate(delete_records[:3], 1):
-                print(f"\nRecord #{i}:")
-                print(f"  Folio: {record.get('folio')}")
-                if 'hash' in record:
-                    print(f"  Hash: {record.get('hash')}")
-                if 'fecha_emision' in record:
-                    print(f"  Fecha: {record.get('fecha_emision')}")
-            if len(delete_records) > 3:
-                print(f"\n... and {len(delete_records) - 3} more records to delete")
+        # # Print sample of records to delete (SQL only)
+        # delete_records = api_ops.get('delete', [])
+        # if delete_records:
+        #     print("\n=== SAMPLE RECORDS TO DELETE (SQL only) ===")
+        #     for i, record in enumerate(delete_records[:3], 1):
+        #         print(f"\nRecord #{i}:")
+        #         print(f"  Folio: {record.get('folio')}")
+        #         if 'hash' in record:
+        #             print(f"  Hash: {record.get('hash')}")
+        #         if 'fecha_emision' in record:
+        #             print(f"  Fecha: {record.get('fecha_emision')}")
+        #     if len(delete_records) > 3:
+        #         print(f"\n... and {len(delete_records) - 3} more records to delete")
         
         print("\n=================================================\n")

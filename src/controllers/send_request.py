@@ -61,20 +61,20 @@ class SendRequest:
         if creates:
             result_create = self.create(creates)
             results['create'] = result_create
-            print("Creates:")
-            print(json.dumps(result_create, indent=4, cls=self.json_encoder))
+            # print("Creates:")
+            # print(json.dumps(result_create, indent=4, cls=self.json_encoder))
 
         if updates:    
             result_update = self.update(updates)
             results['update'] = result_update
-            print("Updates:")
-            print(json.dumps(result_update, indent=4, cls=self.json_encoder))
+            # print("Updates:")
+            # print(json.dumps(result_update, indent=4, cls=self.json_encoder))
 
         if deletes:
             result_delete = self.delete(deletes)
             results['delete'] = result_delete
-            print("Deletes:")
-            print(json.dumps(result_delete, indent=4, cls=self.json_encoder))
+            # print("Deletes:")
+            # print(json.dumps(result_delete, indent=4, cls=self.json_encoder))
         
         return results
 
@@ -146,7 +146,7 @@ class SendRequest:
                         dbf_record = original_item.get('dbf_record', {})
 
                         error_message = f"Batch create failed with status {response.status_code}: {response.text}"
-                        print(f'original_item {original_item}')
+                        #print(f'original_item {original_item}')
                         results['failed'].append({
                             'folio': item.get('folio'),
                             'fecha_emision':  dbf_record.get('fecha'),
@@ -177,8 +177,8 @@ class SendRequest:
 
     def update(self, updates):
         results = {
-            'success': {},  # Will store folio -> result for successful operations
-            'failed': {}   # Will store folio -> result for failed operations
+            'success': [],  # Will store list of successful operations
+            'failed': []   # Will store list of failed operations
         }
         
         print(f"Processing {len(updates)} update operations in batches of {self.batch_size}")
@@ -240,7 +240,7 @@ class SendRequest:
                         dbf_record = original_item.get('dbf_record', {})
 
                         error_message = f"Batch create failed with status {response.status_code}: {response.text}"
-                        print(f'original_item {original_item}')
+                        #print(f'original_item {original_item}')
                         results['failed'].append({
                             'folio': item.get('folio'),
                             'fecha_emision':  dbf_record.get('fecha'),
@@ -274,8 +274,8 @@ class SendRequest:
 
     def delete(self, deletes):# TO DO : update whole method <------------------------------------------------------
         results = {
-            'success': {},  # Will store folio -> result for successful operations
-            'failed': {}   # Will store folio -> result for failed operations
+            'success': [],  # Will store folio -> result for successful operations
+            'failed': []   # Will store folio -> result for failed operations
         }
         
         print(f"Processing {len(deletes)} delete operations in batches of {self.batch_size}")
@@ -303,39 +303,81 @@ class SendRequest:
                         "total_bruto": dbf_record.get("total_bruto")
                     })
                 
-                # Make batch DELETE request
+                # Extract folios for the URL
+                folios = [item.get('folio') for item in batch]
+                comma_separated_folios = ",".join(folios)
+                
+                # Make batch DELETE request with folios in the URL
                 response = requests.delete(
-                    f"{self.base_url}", 
-                    headers=self.headers,
-                    data=json.dumps(batch_payload, cls=self.json_encoder)
+                    f"{self.base_url}/{comma_separated_folios}", 
+                    headers=self.headers
                 )
                 
                 if response.status_code in [200, 201, 202, 204]:
-                    batch_response = response.json()
-                    # The API should return a response with status for each record
-                    folio = item.get('folio')
-    
-                    # Get the original item with hash and fecha
-                    original_item = folio_to_item.get(folio)
-                    dbf_record = original_item.get('dbf_record', {})
-
-                    for item in batch_response:
-                        print(f'item {item}')
-                        results['success'].append({
-                            'folio': item.get('folio'), 
-                            'fecha_emision': dbf_record.get('fecha'),
-                            'total_partidas': len(dbf_record.get('detalles')),
-                            'hash': original_item.get('dbf_hash', ''),
-                            'status': response.status_code
-                            })
+                    # For DELETE operations, the response might be different from create/update
+                    # It could be a list of deleted IDs or a success message
+                    try:
+                        batch_response = response.json()
+                        
+                        # If the response contains a list of deleted items
+                        if isinstance(batch_response, list):
+                            for deleted_item in batch_response:
+                                folio = deleted_item.get('folio')
+                                if folio and folio in folio_to_item:
+                                    original_item = folio_to_item.get(folio)
+                                    dbf_record = original_item.get('dbf_record', {})
+                                    
+                                    results['success'].append({
+                                        'folio': folio,
+                                        'fecha_emision': dbf_record.get('fecha'),
+                                        'total_partidas': len(dbf_record.get('detalles', [])),
+                                        'hash': original_item.get('dbf_hash', ''),
+                                        'status': response.status_code
+                                    })
+                        # If the response is just a success message or empty
+                        else:
+                            # Consider all items in the batch as successfully deleted
+                            for folio in folios:
+                                if folio in folio_to_item:
+                                    original_item = folio_to_item.get(folio)
+                                    dbf_record = original_item.get('dbf_record', {})
+                                    
+                                    results['success'].append({
+                                        'folio': folio,
+                                        'fecha_emision': dbf_record.get('fecha'),
+                                        'total_partidas': len(dbf_record.get('detalles', [])),
+                                        'hash': original_item.get('dbf_hash', ''),
+                                        'status': response.status_code
+                                    })
+                    except ValueError:
+                        # If the response is not JSON, consider all items successful
+                        for folio in folios:
+                            if folio in folio_to_item:
+                                original_item = folio_to_item.get(folio)
+                                dbf_record = original_item.get('dbf_record', {})
+                                
+                                results['success'].append({
+                                    'folio': folio,
+                                    'fecha_emision': dbf_record.get('fecha'),
+                                    'total_partidas': len(dbf_record.get('detalles', [])),
+                                    'hash': original_item.get('dbf_hash', ''),
+                                    'status': response.status_code
+                                })
         
                 else:
-                    for item in batch_payload:
-                        error_message = f"Batch create failed with status {response.status_code}: {response.text}"
-                        print(f'item {item}')
-                        results['failed'].append({
-                            'folio': item.get('folio'), 
-                            'status': response.status_code,
+                    error_message = f"Batch delete failed with status {response.status_code}: {response.text}"
+                    # Mark all items in the batch as failed
+                    for folio in folios:
+                        if folio in folio_to_item:
+                            original_item = folio_to_item.get(folio)
+                            dbf_record = original_item.get('dbf_record', {})
+                            
+                            results['failed'].append({
+                                'folio': folio,
+                                'fecha_emision': dbf_record.get('fecha'),
+                                'total_partidas': len(dbf_record.get('detalles', [])),
+                                'hash': original_item.get('dbf_hash', ''),
+                                'status': response.status_code,
                             'error_msg':error_message
                             })
                         

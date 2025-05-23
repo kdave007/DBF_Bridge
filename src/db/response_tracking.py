@@ -47,12 +47,21 @@ class ResponseTracking:
                         accion,
                         current_date  # For the update
                     )
+                    #print(f"\nSQL Operation for folio: {folio}")
+                    #print(f"Parameters: {params}")
+                    
                     cursor.execute(query, params)
                     
                     # Si se insertó, retornará el id
-                    if cursor.fetchone():
+                    result = cursor.fetchone()
+                    #print(f"SQL Result: {result}")
+                    
+                    if result:
+                       # print(f"Operation successful for folio {folio} - hash: {hash}")
                         conn.commit()
                         return True
+                    
+                    print(f"Operation failed for folio {folio}")
                     return False
         except Exception as e:
             logging.error(f"Error insertando estado: {e}")

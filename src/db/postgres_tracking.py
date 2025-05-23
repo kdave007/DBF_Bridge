@@ -125,8 +125,15 @@ class PostgresTracking:
         try:
             with psycopg2.connect(**self.config) as conn:
                 with conn.cursor() as cursor:
+                    # Format dates for better debugging output
                     print(f"\nExecuting SQL query with dates: {start_date} to {end_date}")
-                    cursor.execute(query, (start_date, end_date))
+                    
+                    # Convert datetime objects to date objects if needed
+                    # This ensures we're only comparing the date part in the query
+                    start_date_param = start_date.date() if hasattr(start_date, 'date') else start_date
+                    end_date_param = end_date.date() if hasattr(end_date, 'date') else end_date
+                    
+                    cursor.execute(query, (start_date_param, end_date_param))
                     
                     if cursor.description:
                         columns = [desc[0] for desc in cursor.description]

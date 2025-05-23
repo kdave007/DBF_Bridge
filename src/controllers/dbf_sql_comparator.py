@@ -151,8 +151,8 @@ class DBFSQLComparator:
             return {"matched": False, "error": "SQL record missing hash_lote field"}
         
         is_match = dbf_hash == sql_hash
-        print(f"DBF Hash: {dbf_hash}")
-        print(f"SQL Hash: {sql_hash}")
+        # print(f"DBF Hash: {dbf_hash}")
+        # print(f"SQL Hash: {sql_hash}")
         
         # Perform record-by-record comparison directly instead of just checking batch hashes
         # This ensures we always get the same structure as compare_records_by_hash
