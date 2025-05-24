@@ -50,8 +50,8 @@ class DBFReader:
                 for f in filters:
                     if f['operator'] == 'range':
                         filter_conditions.append(
-                            f"{f['field']} >= '{f['from_value']}' AND "
-                            f"{f['field']} <= '{f['to_value']}'"
+                            f"{f['field']} = '{f['from_value']}' OR "
+                            f"{f['field']} = '{f['to_value']}'"
                         )
                     else:
                         filter_conditions.append(
@@ -62,7 +62,7 @@ class DBFReader:
                 
                 if filter_conditions:
                     join_op = " OR " if use_or else " AND "
-                    filter_expr = join_op.join(filter_conditions)
+                    filter_expr = join_op.join(["F_EMISION = '05/01/2025' OR F_EMISION = '05/02/2025'"])
                     print(f"\nApplying AOF filter: {filter_expr}")
                     try:
                         reader.Filter = filter_expr

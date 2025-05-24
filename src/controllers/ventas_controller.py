@@ -130,8 +130,8 @@ class VentasController:
         filters = [{
             'field': 'F_EMISION',
             'operator': 'range',
-            'from_value': start_date.strftime('%d/%m/%Y 12:00:00 a. m.'),  # Format to match DBF
-            'to_value': end_date.strftime('%d/%m/%Y 11:59:59 p. m.'),  # End of day
+            'from_value': start_date.strftime('%d/%m/%Y'),  # Format to match DBF
+            'to_value': end_date.strftime('%d/%m/%Y'),  # End of day
             'is_date': False  # F_EMISION is stored as string
         }]
         print(f"\nSearching for date range: {start_date.strftime('%d/%m/%Y %H:%M:%S')} to {end_date_inclusive.strftime('%d/%m/%Y %H:%M:%S')}")

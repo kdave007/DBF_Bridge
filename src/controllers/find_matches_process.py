@@ -41,8 +41,8 @@ class MatchesProcess:
         # Note: The date in the DBF is in DD/MM/YYYY format
         
         # Let's try with the exact date from your screenshot: 20/03/2025
-        start_date = datetime(2025, 4, 21, 0, 0, 0)  # March 20, 2025
-        end_date = datetime(2025, 4, 21, 23, 59, 59)  # March 20, 2025
+        start_date = datetime(2025, 1, 5, 0, 0, 0)  # March 20, 2025
+        end_date = datetime(2025, 2, 5, 23, 59, 59)  # March 20, 2025
         
         # Print the exact format we're looking for to help debug
         print(f"Looking for records with date exactly matching: 20/03/2025")
