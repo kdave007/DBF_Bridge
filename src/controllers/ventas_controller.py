@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import Dict, Any, List
 import json
 import time
@@ -118,23 +118,21 @@ class VentasController:
         
         return details_by_folio
         
-    def _get_headers_in_range(self, start_date: datetime, end_date: datetime) -> List[Dict[str, Any]]:
+    def _get_headers_in_range(self, start_date: date, end_date: date) -> List[Dict[str, Any]]:
         """Get sales headers within the specified date range."""
         field_mappings = self.mapping_manager.get_field_mappings(self.venta_dbf)
-        
-        # Format dates to match DBF format (dd/mm/yyyy)
-        # For end_date, we want to include the entire day, so we add one day and subtract 1 second
-        end_date_inclusive = end_date + timedelta(days=1) - timedelta(seconds=1)
+        str_start = start_date.strftime("%m-%d-%Y")
+        str_end = end_date.strftime("%m-%d-%Y")
         
         # Create a single filter for the date range
         filters = [{
             'field': 'F_EMISION',
             'operator': 'range',
-            'from_value': start_date.strftime('%d/%m/%Y'),  # Format to match DBF
-            'to_value': end_date.strftime('%d/%m/%Y'),  # End of day
+            'from_value': str_start,  # Format to match DBF M/D/Y
+            'to_value':str_end,  # End of day
             'is_date': False  # F_EMISION is stored as string
         }]
-        print(f"\nSearching for date range: {start_date.strftime('%d/%m/%Y %H:%M:%S')} to {end_date_inclusive.strftime('%d/%m/%Y %H:%M:%S')}")
+        print(f"\nSearching for date range: {start_date} to {end_date}")
         
         read_start = time.time()
         raw_data_str = self.reader.to_json(self.venta_dbf, self.config.limit_rows, filters)

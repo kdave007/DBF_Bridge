@@ -7,7 +7,7 @@ from pathlib import Path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(project_root)
 
-from datetime import datetime, timedelta
+from datetime import date, timedelta
 from src.controllers.ventas_controller import VentasController
 from src.dbf_enc_reader.mapping_manager import MappingManager
 from src.config.dbf_config import DBFConfig
@@ -41,8 +41,10 @@ class MatchesProcess:
         # Note: The date in the DBF is in DD/MM/YYYY format
         
         # Let's try with the exact date from your screenshot: 20/03/2025
-        start_date = datetime(2025, 1, 5, 0, 0, 0)  # March 20, 2025
-        end_date = datetime(2025, 2, 5, 23, 59, 59)  # March 20, 2025
+        start_date = date(2025, 4, 29)  # March 20, 2025
+        end_date = date(2025, 4, 30)  # March 20, 2025
+
+        
         
         # Print the exact format we're looking for to help debug
         print(f"Looking for records with date exactly matching: 20/03/2025")
@@ -62,7 +64,7 @@ class MatchesProcess:
             comparison_result = self.comparator.add_all(dbf_records=dbf_results)
         else:
             # When SQL records exist, compare them with DBF records
-            comparison_result = self.comparator.compare_batch_by_day(dbf_records=dbf_results, sql_records=sql_records)
+            comparison_result = self.comparator.compare_records_by_hash(dbf_records=dbf_results, sql_records=sql_records, start_date=start_date, end_date=end_date)
         
         # Print summary of operations
         self.print_comparison_results(comparison_result)

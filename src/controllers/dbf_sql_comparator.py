@@ -108,11 +108,11 @@ class DBFSQLComparator:
             fecha = first_record['fecha']
             # Try different date formats - DBF uses MM/DD/YYYY format
             date_formats = [
-                '%m/%d/%Y %I:%M:%S %p',  # MM/DD/YYYY with AM/PM
-                '%m/%d/%Y %I:%M:%S %a. m.',  # MM/DD/YYYY with Spanish AM
-                '%m/%d/%Y %I:%M:%S %p. m.',  # MM/DD/YYYY with Spanish PM
-                '%m/%d/%Y %H:%M:%S',  # MM/DD/YYYY with 24-hour time
-                '%m/%d/%Y'  # MM/DD/YYYY date only
+                '%d/%m/%Y %I:%M:%S %p',  # MM/DD/YYYY with AM/PM
+                '%d/%m/%Y %I:%M:%S %a. m.',  # MM/DD/YYYY with Spanish AM
+                '%d/%m/%Y %I:%M:%S %p. m.',  # MM/DD/YYYY with Spanish PM
+                '%d/%m/%Y %H:%M:%S',  # MM/DD/YYYY with 24-hour time
+                '%d/%m/%Y'  # MM/DD/YYYY date only
             ]
             
             record_date = None
@@ -125,7 +125,7 @@ class DBFSQLComparator:
                     break
                 except ValueError:
                     continue
-                    
+                   
             if record_date is None:
                 raise ValueError(f"Could not parse date: {fecha} with any known format")
                 
@@ -143,7 +143,7 @@ class DBFSQLComparator:
         
         # Calculate MD5 hash for the DBF records
         dbf_hash = self._calculate_md5(dbf_records)
-        
+    
         # Compare the hashes
         sql_hash = lote_record.get('hash_lote')
         if not sql_hash:
@@ -161,7 +161,7 @@ class DBFSQLComparator:
             
         return result
     
-    def compare_records_by_hash(self, dbf_records: Dict[str, Any], start_date: date, end_date: date) -> Dict[str, Any]:
+    def compare_records_by_hash(self, dbf_records: Dict[str, Any], sql_records, start_date: date, end_date: date) -> Dict[str, Any]:
         """
         Compare individual DBF records with database records by hash.
         
@@ -174,7 +174,7 @@ class DBFSQLComparator:
             Dictionary with detailed comparison results
         """
         # Get all records from database for the given date
-        sql_records = self.tracker.get_records_by_date_range(start_date, end_date)
+       # sql_records = self.tracker.get_records_by_date_range(start_date, end_date)
         
         if not sql_records:
             return {
@@ -208,6 +208,7 @@ class DBFSQLComparator:
                 sql_record = sql_records_by_folio[folio]
                 
                 # Compare hashes - if different, it needs to be updated
+                #print(f'////////----------- { dbf_record}  vs  {sql_record}')
                 if dbf_record.get('md5_hash') != sql_record.get('hash'):
                     # Store mismatched records for update
                     mismatched.append({
