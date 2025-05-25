@@ -134,6 +134,7 @@ class SendRequest:
                             'fecha_emision': dbf_record.get('fecha'),
                             'total_partidas': len(dbf_record.get('detalles')),
                             'hash': original_item.get('dbf_hash', ''),
+                            'details': dbf_record.get('detalles'),
                             'status': response.status_code
                             })
         
@@ -229,6 +230,7 @@ class SendRequest:
                             'fecha_emision': dbf_record.get('fecha'),
                             'total_partidas': len(dbf_record.get('detalles')),
                             'hash': original_item.get('dbf_hash', ''),
+                            'details': dbf_record.get('detalles'),
                             'status': response.status_code
                             })
                 else:

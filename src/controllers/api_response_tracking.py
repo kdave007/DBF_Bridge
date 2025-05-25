@@ -36,6 +36,7 @@ class APIResponseTracking:
            
            for item in results.get('success'):
                 # Parse the date string from DBF format to a proper date object
+               
                 fecha_str = item.get('fecha_emision')
                 try:
                     # Remove the 'a. m.' or 'p. m.' part and parse the date
@@ -64,6 +65,7 @@ class APIResponseTracking:
         estado = 'ca_completado'
         if results.get('success'):
             for item in results.get('success'):
+               
                 # Parse the date string from DBF format to a proper date object
                 fecha_str = item.get('fecha_emision')
                 try:

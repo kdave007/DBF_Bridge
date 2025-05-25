@@ -31,7 +31,7 @@ class MatchesProcess:
         self.comparator = DBFSQLComparator(self.db_config)
         self.insertion_processor = InsertionProcess(self.db_config)
 
-    def compare_data(self, config):
+    def compare_data(self, config, start_date, end_date):
         
         #TO DO : this config may be pass as a parameter and not defined here, but just for testing
        
@@ -39,12 +39,7 @@ class MatchesProcess:
         # From the image you shared, we can see a record with date 20/03/2025
         # Let's use exactly that date for our test
         # Note: The date in the DBF is in DD/MM/YYYY format
-        
-        # Let's try with the exact date from your screenshot: 20/03/2025
-        start_date = date(2025, 4, 29)  # March 20, 2025
-        end_date = date(2025, 4, 30)  # March 20, 2025
-
-        
+            
         
         # Print the exact format we're looking for to help debug
         print(f"Looking for records with date exactly matching: 20/03/2025")

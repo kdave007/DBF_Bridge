@@ -3,12 +3,19 @@
 from .find_matches_process import MatchesProcess
 from .api_response_tracking import APIResponseTracking
 from .send_request import SendRequest
+from .details_controller import DetailsController
+from datetime import date
 
 class WorkFlow:
     def start(self, config):
 
+         # Let's try with the exact date from your screenshot: 20/03/2025
+        start_date = date(2025, 4, 29)  # March 20, 2025
+        end_date = date(2025, 4, 30)  # March 20, 2025
+
+
         self.matches_process = MatchesProcess()
-        result = self.matches_process.compare_data(config)
+        result = self.matches_process.compare_data(config, start_date, end_date)
         # sample = {
         #     "matched": is_match,
         #     "dbf_hash": dbf_hash,
@@ -46,6 +53,9 @@ class WorkFlow:
 
             api_tracker = APIResponseTracking()
             api_tracker.update_tracker(requests_results)
+
+            details_controller = DetailsController()
+            details_controller.process(requests_results, start_date, end_date)
             
             
 
