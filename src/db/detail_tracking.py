@@ -138,6 +138,7 @@ class DetailTracking:
                     success_count = 0
                     
                     for detail in details:
+                        print(f' $$$$ inserting record detail : {detail}')
                         folio = detail.get('folio')
                         
                         # Initialize counter for this folio if not exists
@@ -165,6 +166,7 @@ class DetailTracking:
                         )
                         
                         try:
+                            
                             cursor.execute(query, params)
                             success_count += 1
                         except Exception as e:
