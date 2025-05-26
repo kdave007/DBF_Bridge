@@ -71,6 +71,11 @@ class DetailsController:
                     if 'details' in record:
                         for detail in record['details']:
                             detail_with_operation = detail.copy()
+                            
+                            # Convert REF to lowercase ref if it exists
+                            if 'REF' in detail_with_operation:
+                                detail_with_operation['ref'] = detail_with_operation.pop('REF')
+                                
                             detail_with_operation['operation'] = operation
                             detail_with_operation['folio'] = record.get('folio')
                             
@@ -156,10 +161,16 @@ class DetailsController:
     def analyze_sync(self, combined_details, sql_records):
         """Core analysis function with accurate duplicate handling"""
         # Create lookup dictionaries and track counts
+        for item in combined_details:
+            print(f'COMBINED SYNC {item.get("ref")}')
         
+        
+        for item in sql_records:
+            print(f'sql SYNC {item.get("ref")}')
+
         combined_counts = {}
         for item in combined_details:
-            # For combined records, use 'REF' field
+            # For combined records, use 'ref' field (now lowercase)
             key = (item['folio'], item.get('ref', ''))
             combined_counts[key] = combined_counts.get(key, 0) + 1
         
@@ -181,7 +192,7 @@ class DetailsController:
         for key in set(combined_counts) - set(sql_counts):
             in_combined_only.extend(
                 [item for item in combined_details 
-                if (item['folio'], item.get('REF', '')) == key]
+                if (item['folio'], item.get('ref', '')) == key]
             )
         
         # Process records only in SQL (delete)
@@ -200,7 +211,7 @@ class DetailsController:
 
             # Check for updates
             combined_hashes = {i['detail_hash'] for i in combined_details 
-                            if (i['folio'], i['ref']) == key}
+                            if (i['folio'], i.get('ref', '')) == key}
             sql_hashes = {i['hash_detalle'] for i in sql_items[key]}
             
             if combined_hashes != sql_hashes:
@@ -208,8 +219,8 @@ class DetailsController:
                     {
                         'sql_id': sql_item['id'],
                         'combined_data': next(c for c in combined_details 
-                                            if (c['folio'], c['ref']) == key 
-                                            and c['detail_hash'] != sql_item['hash_detalle']),
+                                            if (c['folio'], c.get('ref', '')) == key 
+                                             and c['detail_hash'] != sql_item['hash_detalle']),
                         'sql_data': sql_item
                     }
                     for sql_item in sql_items[key]
@@ -239,7 +250,7 @@ class DetailsController:
         
         print(f"\nCREATE ({len(ops['create'])} records):")
         for item in ops['create']:
-            print(f"  - Folio: {item['folio']}, REF: {item.get('REF', '')}")
+            print(f"  - Folio: {item['folio']}, ref: {item.get('ref', '')}")
 
         print(f"\nUPDATE ({len(ops['update'])} records):")
         for item in ops['update']:
