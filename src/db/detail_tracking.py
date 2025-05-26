@@ -16,7 +16,8 @@ class DetailTracking:
                                hash_detalle: str,
                                fecha: date,
                                estado: str = 'pendiente',
-                               accion: str = 'create') -> bool:
+                               accion: str = 'create',
+                               ref: str = '') -> bool:
         """
         Inserta un nuevo registro de detalle o actualiza uno existente
         
@@ -26,6 +27,7 @@ class DetailTracking:
             fecha: Fecha del detalle
             estado: Estado del detalle (pendiente, procesado, error)
             accion: Tipo de operación (create, update, delete)
+            ref: Referencia del detalle
             
         Returns:
             True si la operación fue exitosa, False en caso contrario
@@ -35,17 +37,19 @@ class DetailTracking:
                 with conn.cursor() as cursor:
                     query = sql.SQL("""
                         INSERT INTO detalle_estado (
-                            folio, hash_detalle, fecha, estado, accion
-                        ) VALUES (%s, %s, %s, %s, %s)
+                            folio, hash_detalle, fecha, estado, accion, ref
+                        ) VALUES (%s, %s, %s, %s, %s, %s)
                         ON CONFLICT (folio, hash_detalle) 
                         DO UPDATE SET 
                             estado = EXCLUDED.estado,
                             accion = EXCLUDED.accion,
-                            hash_detalle = EXCLUDED.hash_detalle
+                            hash_detalle = EXCLUDED.hash_detalle,
+                            ref = EXCLUDED.ref
                         RETURNING id
                     """)
                     
-                    params = (folio, hash_detalle, fecha, estado, accion)
+                    params = (folio, hash_detalle, fecha, estado, accion, ref)
+                    
                     cursor.execute(query, params)
                     
                     result = cursor.fetchone()
@@ -71,7 +75,7 @@ class DetailTracking:
             with psycopg2.connect(**self.config) as conn:
                 with conn.cursor() as cursor:
                     query = sql.SQL("""
-                        SELECT id, folio, hash_detalle, fecha, estado, accion
+                        SELECT id, folio, hash_detalle, fecha, estado, accion, ref
                         FROM detalle_estado
                         WHERE fecha BETWEEN %s AND %s
                         ORDER BY fecha DESC, folio ASC
@@ -126,12 +130,13 @@ class DetailTracking:
                 with conn.cursor() as cursor:
                     query = sql.SQL("""
                         INSERT INTO detalle_estado (
-                            id, folio, hash_detalle, fecha, estado, accion
-                        ) VALUES (%s, %s, %s, %s, %s, %s)
+                            id, folio, hash_detalle, fecha, estado, accion, ref
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                         ON CONFLICT (id) DO UPDATE SET
                             estado = EXCLUDED.estado,
                             accion = EXCLUDED.accion,
-                            hash_detalle = EXCLUDED.hash_detalle
+                            hash_detalle = EXCLUDED.hash_detalle,
+                            ref = EXCLUDED.ref
                     """)
                     
                     # Track successful inserts
@@ -156,13 +161,21 @@ class DetailTracking:
                         if not fecha:
                             fecha = date.today()
                         
+                        # Get the REF value - check both 'REF' and 'ref' keys to handle case sensitivity
+                        ref_value = ''
+                        if 'REF' in detail:
+                            ref_value = detail['REF']
+                        elif 'ref' in detail:
+                            ref_value = detail['ref']
+                        
                         params = (
                             composite_id,
                             folio,
                             detail.get('detail_hash') or detail.get('hash_detalle'),
                             fecha,
                             detail.get('estado', 'pendiente'),
-                            detail.get('operation') or detail.get('accion', 'create')
+                            detail.get('operation') or detail.get('accion', 'create'),
+                            ref_value
                         )
                         
                         try:

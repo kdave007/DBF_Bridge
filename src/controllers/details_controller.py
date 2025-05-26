@@ -21,14 +21,15 @@ class DetailsController:
 
         #inserted = self.insert_records(self.db, combined)
 
-        # Get existing records from database
+    
+            # Get existing records from database
         sql_records = self.get_sql_records(self.db, start_date, end_date)
         
-        # Compare records to find differences
-        comparison_result = self.compare_batches(combined, sql_records)
+            # Compare records to find differences
+        comparison_result = self.analyze_sync(combined, sql_records)
         
         # Print comparison summary
-        self.print_comparison_results(comparison_result)
+        self.print_sync_report(comparison_result)
         
         # Process operations based on comparison results
         operations = comparison_result.get('operations', {})
@@ -86,6 +87,8 @@ class DetailsController:
                             detail_with_operation['detail_hash'] = hashlib.md5(detail_str.encode()).hexdigest()
 
                             combined_details.append(detail_with_operation)
+        print(' ---   --- --- --- --- --- ---')
+        print(results)
         
         return combined_details
 
@@ -98,7 +101,7 @@ class DetailsController:
         # Use the get_details_by_date_range method from DetailTracking
         records = detail_tracker.get_details_by_date_range(start_date, end_date)
         
-        print(f"Found {len(records)} records between {start_date} and {end_date}")
+        print(f"Found {(records)} records between {start_date} and {end_date}")
         return records
         
     def insert_records(self, db_connection, records):
@@ -127,122 +130,148 @@ class DetailsController:
             print("Error inserting records")
             return 0
             
-    def compare_batches(self, combined_details, sql_records):
+    def get_record_key(self, record, is_sql=False):
         """
-        Compare combined detail records with SQL records to find differences
+        Extract the key fields that identify a unique detail record
         
         Args:
-            combined_details: List of detail records from DBF/API
-            sql_records: List of records from SQL database
+            record: The record to extract key from
+            is_sql: Whether this is a SQL record (different field names)
             
         Returns:
-            Dictionary with comparison results
+            Tuple of (folio, hash) for unique identification
         """
-        if not combined_details:
-            return {
-                "status": "no_dbf_records",
-                "message": "No DBF/combined records provided"
-            }
-            
-        if not sql_records:
-            return {
-                "status": "no_sql_records",
-                "message": "No SQL records found"
-            }
+        # Extract the folio which is our primary filter
+        folio = record.get('folio')
         
-        print("\n=== DEBUG: COMPARING RECORDS ===")
-        print(f"Combined records: {len(combined_details)}")
-        print(f"SQL records: {len(sql_records)}")
-        
-        # Instead of comparing by hash, let's compare by the actual content
-        # Create a normalized representation of each record for comparison
-        
-        # Function to create a normalized key for a record
-        def get_record_key(record, is_sql=False):
-            # Extract the key fields that identify a unique detail record
-            folio = record.get('folio')
-            ref = record.get('REF')
-            cantidad = record.get('cantidad')
-            precio = record.get('precio')
-            
-            # Create a tuple of values for comparison
-            return (str(folio), str(ref), str(cantidad), str(precio))
-        
-        # Create dictionaries with normalized keys
-        combined_by_key = {}
-        for record in combined_details:
-            key = get_record_key(record)
-            combined_by_key[key] = record
-            
-        sql_by_key = {}
-        for record in sql_records:
-            key = get_record_key(record, is_sql=True)
-            sql_by_key[key] = record
-        
-        # Debug output
-        print(f"Unique combined keys: {len(combined_by_key)}")
-        print(f"Unique SQL keys: {len(sql_by_key)}")
-        
-        # Get sets of keys for comparison
-        combined_keys = set(combined_by_key.keys())
-        sql_keys = set(sql_by_key.keys())
-        
-        # Find records to create (in combined but not in SQL)
-        create_keys = combined_keys - sql_keys
-        # Find records to delete (in SQL but not in combined)
-        delete_keys = sql_keys - combined_keys
-        
-        # Debug output
-        print(f"Keys to create: {len(create_keys)}")
-        print(f"Keys to delete: {len(delete_keys)}")
-        
-        # Create result lists
-        in_combined_only = []
-        in_sql_only = []
-        mismatched = []  # Records to update
-        
-        # Process records to create
-        for key in create_keys:
-            record = combined_by_key[key]
-            folio = record.get('folio')
-            hash_val = record.get('detail_hash')
-            if folio and hash_val:
-                in_combined_only.append({
-                    "key": f"{folio}-{hash_val}",
-                    "combined_record": record,
-                    "combined_hash": hash_val
-                })
-        
-        # Process records to delete
-        for key in delete_keys:
-            record = sql_by_key[key]
-            folio = record.get('folio')
+        # Get the hash value - different field names in combined vs SQL records
+        if is_sql:
             hash_val = record.get('hash_detalle')
-            if folio and hash_val:
-                in_sql_only.append({
-                    "key": f"{folio}-{hash_val}",
-                    "sql_record": record,
-                    "sql_hash": hash_val
-                })
-        # Organize data by required operations
-        operations = {
-            "create": in_combined_only,
-            "update": mismatched,  # Include mismatched list for updates
-            "delete": in_sql_only
-        }
+        else:
+            hash_val = record.get('detail_hash')
+            
+        # Return a tuple of folio and hash for unique identification
+        return (str(folio), str(hash_val) if hash_val else "")
+    
+    def analyze_sync(self, combined_details, sql_records):
+        """Core analysis function with accurate duplicate handling"""
+        # Create lookup dictionaries and track counts
         
+        combined_counts = {}
+        for item in combined_details:
+            # For combined records, use 'REF' field
+            key = (item['folio'], item.get('ref', ''))
+            combined_counts[key] = combined_counts.get(key, 0) + 1
+        
+        sql_counts = {}
+        sql_items = {}
+        for item in sql_records:
+            # For SQL records, use 'ref' field from the alias in the SQL query
+            key = (item['folio'], item.get('ref', ''))
+            sql_counts[key] = sql_counts.get(key, 0) + 1
+            sql_items.setdefault(key, []).append(item)
+       
+        # Identify operations
+        in_combined_only = []
+        to_update = []
+        to_delete = []
+        unchanged = []
+
+        # Process records only in combined (create)
+        for key in set(combined_counts) - set(sql_counts):
+            in_combined_only.extend(
+                [item for item in combined_details 
+                if (item['folio'], item.get('REF', '')) == key]
+            )
+        
+        # Process records only in SQL (delete)
+        for key in set(sql_counts) - set(combined_counts):
+            to_delete.extend(sql_items[key])
+        
+        # Process common records
+        for key in set(combined_counts) & set(sql_counts):
+            combined_count = combined_counts[key]
+            sql_count = sql_counts[key]
+            
+            # Calculate duplicates to delete
+            if sql_count > combined_count:
+                excess = sql_count - combined_count
+                to_delete.extend(sql_items[key][-excess:])  # Delete oldest/newest duplicates
+
+            # Check for updates
+            combined_hashes = {i['detail_hash'] for i in combined_details 
+                            if (i['folio'], i['ref']) == key}
+            sql_hashes = {i['hash_detalle'] for i in sql_items[key]}
+            
+            if combined_hashes != sql_hashes:
+                to_update.extend([
+                    {
+                        'sql_id': sql_item['id'],
+                        'combined_data': next(c for c in combined_details 
+                                            if (c['folio'], c['ref']) == key 
+                                            and c['detail_hash'] != sql_item['hash_detalle']),
+                        'sql_data': sql_item
+                    }
+                    for sql_item in sql_items[key]
+                    if sql_item['hash_detalle'] not in combined_hashes
+                ])
+      
         return {
-            "status": "completed",
-            "total_combined_records": len(combined_details),
-            "total_sql_records": len(sql_records),
-            "operations": operations,
-            "summary": {
-                "create_count": len(in_combined_only),
-                "update_count": len(mismatched),
-                "delete_count": len(in_sql_only),
-                "total_actions_needed": len(in_combined_only) + len(mismatched) + len(in_sql_only)
+            "operations": {
+                "create": in_combined_only,
+                "update": to_update,
+                "delete": to_delete
+            },
+            "metadata": {
+                "total_combined": len(combined_details),
+                "total_sql": len(sql_records),
+                "duplicate_count": sum(max(0, sql_counts[k] - combined_counts.get(k, 0)) 
+                                    for k in sql_counts)
             }
-        }    
+        }
+
+    def print_sync_report(self, analysis_result):
+        """Updated print function with accurate duplicate counts"""
+        ops = analysis_result['operations']
+        meta = analysis_result['metadata']
+        
+        print("=== Synchronization Report ===")
+        
+        print(f"\nCREATE ({len(ops['create'])} records):")
+        for item in ops['create']:
+            print(f"  - Folio: {item['folio']}, REF: {item.get('REF', '')}")
+
+        print(f"\nUPDATE ({len(ops['update'])} records):")
+        for item in ops['update']:
+            print(f"  - Folio: {item['sql_data']['folio']}, ref: {item['sql_data'].get('ref', '')}")
+            print(f"    SQL ID: {item['sql_id']}")
+            print(f"    Old Hash: {item['sql_data']['hash_detalle']}")
+            print(f"    New Hash: {item['combined_data']['detail_hash']}")
+
+        print(f"\nDELETE ({len(ops['delete'])} records):")
+        delete_reasons = {}
+        for item in ops['delete']:
+            key = (item['folio'], item.get('ref', ''))
+            if key not in delete_reasons:
+                delete_reasons[key] = {
+                    'count': 1,
+                    'type': 'ORPHANED'  # Default reason
+                }
+            else:
+                delete_reasons[key]['count'] += 1
+
+        for key, reason in delete_reasons.items():
+            print(f"  - Folio: {key[0]}, ref: {key[1]} ({reason['type']})")
+            print(f"    Count: {reason['count']} record(s) to delete")
+
+        print("\n=== Summary ===")
+        print(f"Total Combined Records: {meta['total_combined']}")
+        print(f"Total SQL Records: {meta['total_sql']}")
+        print(f"Actions Needed: {len(ops['create']) + len(ops['update']) + len(ops['delete'])}")
+        print(f"  - Create: {len(ops['create'])}")
+        print(f"  - Update: {len(ops['update'])}")
+        print(f"  - Delete: {len(ops['delete'])} (includes {meta['duplicate_count']} duplicates)")
+
 
     
     def print_comparison_results(self, detailed_comparison):
