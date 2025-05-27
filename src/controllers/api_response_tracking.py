@@ -10,10 +10,7 @@ class APIResponseTracking:
         pass
 
     def update_tracker(self, responses_status):
-        # print(responses_status['create'].get('failed',{}))
-        # print(responses_status['update'].get('failed',{}))
-        # print(responses_status['delete'].get('failed',{}))
-
+  
         db_config = {
             'host': 'localhost',
             'database': 'suc_vel',
@@ -25,15 +22,45 @@ class APIResponseTracking:
 
         self.resp_tracking = ResponseTracking(db_config)
 
-        self._create_op(responses_status['create'])
-        self._update_op(responses_status['update'])
-        self._delete_op(responses_status['delete'])
+        status_create = self._create_op(responses_status['create'])
+        print(f'status_create: {status_create}')
+        status_update = self._update_op(responses_status['update'])
+        print(f'status_update: {status_update}')
+        status_delete = self._delete_op(responses_status['delete'])
+        print(f'status_delete: {status_delete}')
+
+        next_step = False
+        
+        if status_create['execute']:
+            if status_create['done']:
+                next_step = True
+            else:
+                return False
+
+        if status_update['execute']:
+            if status_update['done']:
+                next_step = True
+            else:
+                return False
+
+        if status_delete['execute']:
+            if status_delete['done']:
+                next_step = True
+            else:
+                return False
+        print(f'CHECK ')
+        return next_step
+
+
 
     def _create_op(self, results):
         action = 'agregado'
         estado = 'ca_completado'
+        done = False
+        execute = False
+
         if results.get('success'):
-           
+           execute = True
            for item in results.get('success'):
                 # Parse the date string from DBF format to a proper date object
                
@@ -48,7 +75,7 @@ class APIResponseTracking:
                     fecha_date = datetime.now().date()
                     print(f"Warning: Could not parse date '{fecha_str}', using current date instead")
                 
-                self.resp_tracking.update_status(
+                done = self.resp_tracking.update_status(
                     item.get('folio'),
                     item.get('total_partidas'),
                     item.get('hash'),
@@ -56,16 +83,20 @@ class APIResponseTracking:
                     action,
                     fecha_date
                 )
-
+        return {'done': done, 'execute':execute}
 
             
 
     def _update_op(self, results):
         action = 'modificado'
         estado = 'ca_completado'
+        done = False
+        execute = False
+
         if results.get('success'):
+            execute = True
             for item in results.get('success'):
-               
+                
                 # Parse the date string from DBF format to a proper date object
                 fecha_str = item.get('fecha_emision')
                 try:
@@ -78,7 +109,7 @@ class APIResponseTracking:
                     fecha_date = datetime.now().date()
                     print(f"Warning: Could not parse date '{fecha_str}', using current date instead")
                 
-                self.resp_tracking.update_status(
+                done = self.resp_tracking.update_status(
                     item.get('folio'),
                     item.get('total_partidas'),
                     item.get('hash'),
@@ -87,10 +118,17 @@ class APIResponseTracking:
                     fecha_date
                 )
 
+        return {'done': done, 'execute':execute}
+
+
     def _delete_op(self, results):
         action = 'eliminado'
         estado = 'ca_eliminado'
+        done = False
+        execute = False
+
         if results.get('success'):
+            execute = True
             for item in results.get('success'):
                 # Parse the date string from DBF format to a proper date object
                 fecha_str = item.get('fecha_emision')
@@ -104,7 +142,7 @@ class APIResponseTracking:
                     fecha_date = datetime.now().date()
                     print(f"Warning: Could not parse date '{fecha_str}', using current date instead")
                 
-                self.resp_tracking.update_status(
+                done = self.resp_tracking.update_status(
                     item.get('folio'),
                     item.get('total_partidas'),
                     item.get('hash'),
@@ -112,3 +150,4 @@ class APIResponseTracking:
                     action,
                     fecha_date
                 )
+        return {'done': done, 'execute':execute}

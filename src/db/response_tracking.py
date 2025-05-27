@@ -57,7 +57,7 @@ class ResponseTracking:
                     #print(f"SQL Result: {result}")
                     
                     if result:
-                       # print(f"Operation successful for folio {folio} - hash: {hash}")
+                        print(f"Operation successful for folio {folio} - hash: {hash}")
                         conn.commit()
                         return True
                     

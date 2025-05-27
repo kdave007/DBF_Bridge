@@ -52,11 +52,15 @@ class WorkFlow:
             requests_results = send_request.send(result['api_operations'])
 
             api_tracker = APIResponseTracking()
-            api_tracker.update_tracker(requests_results)
+            execution_done = api_tracker.update_tracker(requests_results)
 
-            details_controller = DetailsController()
-            details_controller.process(requests_results, start_date, end_date)
+            
+            if execution_done:
+                #if we updated or posted anything, means we did actions, so check details, if not, continue
+                print('Checking details actions...')
+                details_controller = DetailsController()
+                details_controller.process(requests_results, start_date, end_date)
             
             
 
-        return  result
+        return  result 

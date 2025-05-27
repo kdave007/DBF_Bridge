@@ -21,7 +21,6 @@ class DetailsController:
 
         #inserted = self.insert_records(self.db, combined)
 
-    
             # Get existing records from database
         sql_records = self.get_sql_records(self.db, start_date, end_date)
         
@@ -33,16 +32,26 @@ class DetailsController:
         
         # Process operations based on comparison results
         operations = comparison_result.get('operations', {})
+
+        posted_success = True
+
+        if posted_success:
+            inserted = self.insert_records(self.db, combined)
         
-        # Process CREATE operations
-        if operations.get('create'):
-            create_records = [item['combined_record'] for item in operations['create']]
-            if create_records:
-                inserted = self.insert_records(self.db, create_records)
-                print(f"Inserted {inserted} new records")
+        # # Process CREATE operations
+        # if operations.get('create') and posted_success: #remove the empty sql records condition, and replace it with the posting details results
+        #     print(f'CREATE STRUC { operations.get('create')}')
+        #     print("Tipo de datos:", type(operations.get('create'))) 
+        #     inserted = self.insert_records(self.db, operations.get('create') )
+
+        #     print(f"Inserted {inserted} new records")
         
-        # Process UPDATE operations - could be implemented if needed
-        # if operations.get('update'):
+        # # Process UPDATE operations - could be implemented if needed
+        # if operations.get('update') and posted_success:
+        #     print(f'UPDATE STRUC { operations["update"] }')
+        #     print("Tipo de datos:", type(operations.get('update'))) 
+        #     inserted = self.insert_records(self.db, operations['update'] )
+        #     print(f"updated {inserted} new records")
         #     update_records = [item['combined_record'] for item in operations['update']]
         #     if update_records:
         #         updated = self.update_records(self.db, update_records)
@@ -120,6 +129,7 @@ class DetailsController:
         Returns:
             Number of records successfully processed
         """
+        print(f"checkpoint______________________________")
         if not records:
             return 0
             
@@ -127,7 +137,7 @@ class DetailsController:
         detail_tracker = DetailTracking(db_connection.db_config)
         
         # Use batch_insert_details method to insert all records at once
-        success = detail_tracker.batch_insert_details(records)
+        success = detail_tracker.batch_replace_by_folio(records)
         
         if success:
             return len(records)
@@ -202,9 +212,9 @@ class DetailsController:
         for key in set(combined_counts) - set(sql_counts):
             in_combined_only.extend(
                 [item for item in combined_details 
-                if (item['folio'], item.get('ref', '')) == key]
+                             if (item['folio'], item.get('ref', '')) == key]
             )
-        
+
         # Process records only in SQL (delete)
         # for key in set(sql_counts) - set(combined_counts):
         #     to_delete.extend(sql_items[key])
@@ -231,28 +241,26 @@ class DetailsController:
             combined_count = combined_counts[key]
             sql_count = sql_counts[key]
             
-            # Calculate duplicates to delete
             if sql_count > combined_count:
                 excess = sql_count - combined_count
-                to_delete.extend(sql_items[key][-excess:])  # Delete oldest/newest duplicates
+                to_delete.extend(sql_items[key][-excess:])
 
-            # Check for updates
-            combined_hashes = {i['detail_hash'] for i in combined_details 
-                            if (i['folio'], i.get('ref', '')) == key}
-            sql_hashes = {i['hash_detalle'] for i in sql_items[key]}
+            # Nueva lógica simplificada para updates
+            combined_master = next((c for c in combined_details 
+                                if (c['folio'], c['ref']) == key), None)
             
-            if combined_hashes != sql_hashes:
-                to_update.extend([
-                    {
-                        'sql_id': sql_item['id'],
-                        'combined_data': next(c for c in combined_details 
-                                            if (c['folio'], c.get('ref', '')) == key 
-                                             and c['detail_hash'] != sql_item['hash_detalle']),
-                        'sql_data': sql_item
-                    }
-                    for sql_item in sql_items[key]
-                    if sql_item['hash_detalle'] not in combined_hashes
-                ])
+            if combined_master:
+                for sql_item in sql_items[key]:
+                    if sql_item['hash_detalle'] != combined_master['detail_hash']:
+                        to_update.append({
+                            'sql_id': sql_item['id'],
+                            'folio': key[0],
+                            'ref': key[1],
+                            'fecha': combined_master['fecha'],
+                            'old_hash': sql_item['hash_detalle'],
+                            'detail_hash': combined_master['detail_hash'],
+                            'accion':'modificado'
+                        })
       
         return {
             "operations": {
@@ -281,10 +289,11 @@ class DetailsController:
 
         print(f"\nUPDATE ({len(ops['update'])} records):")
         for item in ops['update']:
-            print(f"  - Folio: {item['sql_data']['folio']}, ref: {item['sql_data'].get('ref', '')}")
+            print(f"  - Folio: {item['folio']}, ref: {item.get('ref', '')}")
             print(f"    SQL ID: {item['sql_id']}")
-            print(f"    Old Hash: {item['sql_data']['hash_detalle']}")
-            print(f"    New Hash: {item['combined_data']['detail_hash']}")
+            print(f"    Old Hash: {item['old_hash']}")
+            print(f"    New Hash: {item['detail_hash']}")
+
 
         print(f"\nDELETE ({len(ops['delete'])} records):")
         delete_reasons = {}
