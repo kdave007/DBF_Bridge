@@ -176,9 +176,19 @@ class DetailsController:
         
         sql_counts = {}
         sql_items = {}
+        # for item in sql_records:
+        #     # For SQL records, use 'ref' field from the alias in the SQL query
+        #     key = (item['folio'], item.get('ref', ''))
+        #     sql_counts[key] = sql_counts.get(key, 0) + 1
+        #     sql_items.setdefault(key, []).append(item)
+
         for item in sql_records:
-            # For SQL records, use 'ref' field from the alias in the SQL query
-            key = (item['folio'], item.get('ref', ''))
+            # Convertir 'folio' (Decimal) a str y 'ref' (si existe) a str
+            folio_str = str(item['folio'])  # Convertimos Decimal('287734') -> '287734'
+            ref_str = str(item.get('ref', ''))  # Por si 'ref' es None o ya es str
+            
+            key = (folio_str, ref_str)  # Ahora key es (str, str)
+            
             sql_counts[key] = sql_counts.get(key, 0) + 1
             sql_items.setdefault(key, []).append(item)
        
@@ -196,8 +206,25 @@ class DetailsController:
             )
         
         # Process records only in SQL (delete)
-        for key in set(sql_counts) - set(combined_counts):
-            to_delete.extend(sql_items[key])
+        # for key in set(sql_counts) - set(combined_counts):
+        #     to_delete.extend(sql_items[key])
+        # 1. Mostrar las claves de ambos diccionarios para comparar
+        print("\n=== DEBUG: Comparando sql_counts vs combined_counts ===")
+        print("Claves en sql_counts:", set(sql_counts))
+        print("Claves en combined_counts:", set(combined_counts))
+
+        # 2. Calcular la diferencia y mostrarla
+        difference = set(sql_counts) - set(combined_counts)
+        print("\nClaves en SQL que NO están en combined_counts (se eliminarán):", difference)
+
+        # 3. Si hay diferencia, mostrar registros afectados
+        if difference:
+            print("\nDetalle de registros a eliminar:")
+            for key in difference:
+                print(f"\n- Clave '{key}' no encontrada en combined_counts.")
+                print("  Registros en SQL:", sql_items.get(key, "NO EXISTE"))
+        else:
+            print("\n✅ No hay diferencias, no se eliminará nada.")
         
         # Process common records
         for key in set(combined_counts) & set(sql_counts):
