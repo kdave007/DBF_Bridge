@@ -18,6 +18,7 @@ class DetailsController:
 
         # Process API results to get combined detail records
         combined = self.process_results(results)
+        delete_folios = self.process_delete_results(results)
 
         #inserted = self.insert_records(self.db, combined)
 
@@ -33,7 +34,8 @@ class DetailsController:
         # Process operations based on comparison results
         operations = comparison_result.get('operations', {})
 
-        posted_success = True
+        self.post_details_by_batches(results, "http://localhost:3000/api/data", "http://localhost:3000/api/data", max_batch_size=100)
+        posted_success = True 
 
         if posted_success:
             inserted = self.insert_records(self.db, combined)
@@ -360,3 +362,198 @@ class DetailsController:
                 print(f"  {i+1}. Folio: {record.get('folio')}, Hash: {record.get('hash_detalle')[:10]}...")
                 
         print("\n=================================================")
+
+
+    def process_delete_results(self, results):
+        """
+        Process API results to extract records from delete.success
+        
+        Args:
+            results: API response containing delete.success records
+            
+        Returns:
+            List of processed records from delete.success
+        """
+        delete_records = []
+        
+        # Check if delete operation exists and has success records
+        if 'delete' in results and 'success' in results['delete']:
+            for record in results['delete']['success']:
+                print(f'  PROCESSING DELETE RECORD: {record}')
+                
+                # Extract folio from the record
+                folio = record.get('folio')
+                if not folio:
+                    print(f"  WARNING: Record missing folio, skipping: {record}")
+                    continue
+                
+                # Create a record with the folio and operation type
+                delete_record = {
+                    'folio': folio,
+                    'operation': 'delete'
+                }
+                
+                # Add fecha if available
+                fecha_str = record.get('fecha_emision')
+                if fecha_str:
+                    # Extract just the date part (before any space)
+                    fecha_parts = fecha_str.split(' ')
+                    if fecha_parts:
+                        delete_record['fecha'] = fecha_parts[0]
+                
+                # Add the record to our list
+                delete_records.append(delete_record)
+                print(f'  ADDED DELETE RECORD: {delete_record}')
+        
+        print(f'TOTAL DELETE RECORDS PROCESSED: {len(delete_records)}')
+        return delete_records
+        
+    def post_details_by_batches(self, results, delete_url, post_url, max_batch_size=100):
+        """
+        Process and post details to URLs by folio, handling delete and post operations.
+        For each folio: first sends a delete request for that folio, then posts its records.
+        
+        Args:
+            results: API response containing records to process
+            delete_url: URL to post delete requests
+            post_url: URL to post data in batches
+            max_batch_size: Maximum number of records in a batch (default 100)
+            
+        Returns:
+            Dictionary with counts of processed records by operation type
+        """
+        import requests
+        import json
+        
+        # Set headers for API requests
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "x-process-json": "true"
+        }
+        
+        # Process the results to get the records
+        combined_records = self.process_results(results)
+        delete_records = self.process_delete_results(results)
+        
+        # Track results
+        result_counts = {
+            'folios_processed': 0,
+            'delete_requests': 0,
+            'delete_success': 0,
+            'post_requests': 0,
+            'post_records': 0,
+            'post_success': 0,
+            'errors': 0
+        }
+        
+        # Collect all folios that need processing
+        all_folios = set()
+        
+        # Add folios from combined records
+        for record in combined_records:
+            folio = record.get('folio')
+            if folio:
+                all_folios.add(folio)
+                
+        # Add folios from delete records
+        for record in delete_records:
+            folio = record.get('folio')
+            if folio:
+                all_folios.add(folio)
+        
+        print(f"Found {len(all_folios)} folios to process")
+        
+        # Group combined records by folio
+        records_by_folio = {}
+        for record in combined_records:
+            folio = record.get('folio')
+            if folio:
+                if folio not in records_by_folio:
+                    records_by_folio[folio] = []
+                records_by_folio[folio].append(record)
+        
+        # Process each folio one at a time
+        for folio in all_folios:
+            print(f"\nProcessing folio: {folio}")
+            
+            try:
+                # Step 1: Send delete request with refs in the URL path
+                # Collect all ref values for this folio
+                ref_values = []
+                
+                # Get all ref values from the records for this folio
+                for record in records_by_folio.get(folio, []):
+                    if record.get('ref') and record.get('ref') not in ref_values:
+                        ref_values.append(record.get('ref'))
+                
+                # If no refs found, use the folio as the only value
+                if not ref_values:
+                    ref_values = [folio]
+                
+                # Create a comma-separated list of refs
+                refs_string = ','.join(ref_values)
+                
+                # Construct URL with refs in the path
+                delete_url_with_refs = f"{delete_url}/{folio},{refs_string}"
+                
+                print(f"Sending delete request to {delete_url_with_refs}")
+                delete_response = requests.delete(delete_url_with_refs, headers=headers)  # Using DELETE method with headers
+                result_counts['delete_requests'] += 1
+                
+                if delete_response.status_code == 200:
+                    delete_result = delete_response.json()
+                    print(f"Delete response: {delete_result}")
+                    result_counts['delete_success'] += 1
+                else:
+                    print(f"Delete request failed with status code {delete_response.status_code}")
+                    print(f"Response: {delete_response.text}")
+                    result_counts['errors'] += 1
+                    continue  # Skip to next folio if delete fails
+                
+                # Step 2: Send post request with records for this folio
+                folio_records = records_by_folio.get(folio, [])
+                
+                if not folio_records:
+                    print(f"No records to post for folio {folio}, skipping post request")
+                    continue
+                
+                # Split records into batches if needed
+                batches = []
+                for i in range(0, len(folio_records), max_batch_size):
+                    batch = folio_records[i:i + max_batch_size]
+                    batches.append(batch)
+                
+                for i, batch in enumerate(batches):
+                    print(f"Posting batch {i+1}/{len(batches)} with {len(batch)} records for folio {folio}")
+                    # Send the batch to the post URL with headers
+                    post_response = requests.post(post_url, json=batch, headers=headers)
+                    result_counts['post_requests'] += 1
+                    result_counts['post_records'] += len(batch)
+                    
+                    if post_response.status_code == 200:
+                        post_result = post_response.json()
+                        print(f"Post response: {post_result}")
+                        result_counts['post_success'] += 1
+                    else:
+                        print(f"Post request failed with status code {post_response.status_code}")
+                        print(f"Response: {post_response.text}")
+                        result_counts['errors'] += 1
+                
+                result_counts['folios_processed'] += 1
+                print(f"Completed processing folio {folio}")
+                
+            except Exception as e:
+                print(f"Error processing folio {folio}: {e}")
+                result_counts['errors'] += 1
+        
+        # Print summary
+        print("\n=== Processing Summary ===")
+        print(f"Total folios processed: {result_counts['folios_processed']}")
+        print(f"Delete requests: {result_counts['delete_requests']} (successful: {result_counts['delete_success']})")
+        print(f"Post requests: {result_counts['post_requests']} (successful: {result_counts['post_success']})")
+        print(f"Total records posted: {result_counts['post_records']}")
+        print(f"Errors encountered: {result_counts['errors']}")
+        print("==========================\n")
+        
+        return result_counts
