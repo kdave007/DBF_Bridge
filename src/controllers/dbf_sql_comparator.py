@@ -213,6 +213,7 @@ class DBFSQLComparator:
                     # Store mismatched records for update
                     mismatched.append({
                         "folio": folio,
+                        "id": int(sql_records_by_folio[folio].get('id', 0)),
                         "dbf_record": dbf_record,
                         "sql_record": sql_record,
                         "dbf_hash": dbf_record.get('md5_hash'),
@@ -231,6 +232,7 @@ class DBFSQLComparator:
             if folio not in dbf_records_by_folio:
                 # Store complete SQL-only records
                 in_sql_only.append({
+                    "id": int(sql_records_by_folio[folio].get('id', 0)),
                     "folio": folio,
                     "sql_record": sql_record,
                     "sql_hash": sql_record.get('hash')

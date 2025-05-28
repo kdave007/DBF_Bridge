@@ -27,7 +27,7 @@ class ResponseTracking:
                             id,folio, total_partidas, hash,
                             fecha_procesamiento, estado, fecha_emision, accion
                         ) VALUES (%s,%s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (folio) DO UPDATE SET
+                        ON CONFLICT (id) DO UPDATE SET
                             estado = EXCLUDED.estado,
                             hash = EXCLUDED.hash,
                             accion = EXCLUDED.accion,

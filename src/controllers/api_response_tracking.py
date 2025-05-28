@@ -1,6 +1,6 @@
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, date
 
 from src.db.response_tracking import ResponseTracking
 
@@ -98,20 +98,28 @@ class APIResponseTracking:
         if results.get('success'):
             execute = True
             for item in results.get('success'):
-                
+              
                 # Parse the date string from DBF format to a proper date object
                 fecha_str = item.get('fecha_emision')
                 try:
-                    # Remove the 'a. m.' or 'p. m.' part and parse the date
-                    fecha_str = fecha_str.replace(' a. m.', '').replace(' p. m.', '')
-                    # Format is day/month/year in the DBF records
-                    fecha_date = datetime.strptime(fecha_str, '%d/%m/%Y %H:%M:%S').date()
+                   # Extract only the date part (DD/MM/YYYY) and ignore time
+                    if fecha_str and isinstance(fecha_str, str):
+                        # Get only the date part by splitting on space and taking first part
+                        date_part = fecha_str.split(' ')[0]
+                        # Split by / to get day, month, year
+                        day, month, year = date_part.split('/')
+                        # Create date object with just the date components
+                        
+                        fecha_date = date(int(year), int(month), int(day))
+                    else:
+                        fecha_date = datetime.now().date()
                 except (ValueError, AttributeError):
                     # Fallback to current date if parsing fails
                     fecha_date = datetime.now().date()
                     print(f"Warning: Could not parse date '{fecha_str}', using current date instead")
                 
                 done = self.resp_tracking.update_status(
+                    item.get('id'),
                     item.get('folio'),
                     item.get('total_partidas'),
                     item.get('hash'),
