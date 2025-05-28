@@ -424,6 +424,27 @@ class DetailsController:
         """
         import requests
         import json
+
+
+        """
+            delete responses :
+
+            200 
+            if posting new, we wont be able to delete id first cause id doesnt exists, this is ok!
+                {
+                    "return": "No se han encontrado todos los registros a eliminar"
+                }
+
+            deleted, now insert the new one (updating records)
+                {
+                    "return": "Eliminado(s) con éxito"
+                }
+
+            one of the reocords couldnt delete 
+                {
+                    "return": "No se ha podido eliminar el registro 1, se deshace la transacción"
+                } 
+            """
         
         # Set headers for API requests
         headers = {
@@ -526,8 +547,14 @@ class DetailsController:
                 
                 for i, batch in enumerate(batches):
                     print(f"Posting batch {i+1}/{len(batches)} with {len(batch)} records for folio {folio}")
-                    # Send the batch to the post URL with headers
-                    post_response = requests.post(post_url, json=batch, headers=headers)
+                    # If batch has only one element, send it as a dictionary instead of an array
+                    if len(batch) == 1:
+                        print(f"Sending single record as dictionary for folio {folio}")
+                        post_response = requests.post(post_url, json=batch[0], headers=headers)
+                    else:
+                        # Send the batch as an array for multiple records
+                        print(f"Sending {len(batch)} records as array for folio {folio}")
+                        post_response = requests.post(post_url, json=batch, headers=headers)
                     result_counts['post_requests'] += 1
                     result_counts['post_records'] += len(batch)
                     

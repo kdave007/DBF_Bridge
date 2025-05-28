@@ -10,6 +10,7 @@ class ResponseTracking:
         self.config = db_config 
 
     def update_status(self, 
+                        id,
                         folio: str, 
                         total_partidas: int,
                         hash: str,
@@ -23,9 +24,9 @@ class ResponseTracking:
                     # Insert o update si existe
                     query = sql.SQL("""
                         INSERT INTO estado_factura_venta (
-                            folio, total_partidas, hash,
+                            id,folio, total_partidas, hash,
                             fecha_procesamiento, estado, fecha_emision, accion
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        ) VALUES (%s,%s, %s, %s, %s, %s, %s, %s)
                         ON CONFLICT (folio) DO UPDATE SET
                             estado = EXCLUDED.estado,
                             hash = EXCLUDED.hash,
@@ -38,6 +39,7 @@ class ResponseTracking:
                     
                     current_date = datetime.now().date()
                     params = (
+                        id,
                         folio, 
                         total_partidas, 
                         hash, 
