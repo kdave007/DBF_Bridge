@@ -433,9 +433,7 @@ class SendRequest:
                                     
                                     results['success'].append({
                                         'folio': folio,
-                                        'fecha_emision': dbf_record.get('fecha'),
-                                        'total_partidas': len(dbf_record.get('detalles', [])),
-                                        'hash': original_item.get('dbf_hash', ''),
+                                        'id':deleted_item.get('id'),
                                         'status': response.status_code
                                     })
                         # If the response is just a success message or empty
@@ -448,9 +446,7 @@ class SendRequest:
                                     
                                     results['success'].append({
                                         'folio': folio,
-                                        'fecha_emision': dbf_record.get('fecha'),
-                                        'total_partidas': len(dbf_record.get('detalles', [])),
-                                        'hash': original_item.get('dbf_hash', ''),
+                                        'id':deleted_item.get('id'),
                                         'status': response.status_code
                                     })
                     except ValueError:
@@ -491,7 +487,7 @@ class SendRequest:
                 # Mark all records in the batch as failed
                 for item in batch_payload:
                         error_message = f"Batch create failed with status {response.status_code}: {response.text}"
-                        print(f'item {item}')
+                        print(f'item aa {item}')
                         results['failed'].append({
                             'folio': item.get('folio'), 
                             'status': None,

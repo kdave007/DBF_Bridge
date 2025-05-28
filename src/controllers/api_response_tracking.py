@@ -138,8 +138,10 @@ class APIResponseTracking:
         execute = False
 
         if results.get('success'):
+           
             execute = True
             for item in results.get('success'):
+                print(f" ITEM {item}")
                 # Parse the date string from DBF format to a proper date object
                 fecha_str = item.get('fecha_emision')
                 try:
@@ -152,12 +154,7 @@ class APIResponseTracking:
                     fecha_date = datetime.now().date()
                     print(f"Warning: Could not parse date '{fecha_str}', using current date instead")
                 
-                done = self.resp_tracking.update_status(
-                    item.get('folio'),
-                    item.get('total_partidas'),
-                    item.get('hash'),
-                    estado,
-                    action,
-                    fecha_date
+                done = self.resp_tracking.delete_by_id(
+                    item.get('id')
                 )
         return {'done': done, 'execute':execute}

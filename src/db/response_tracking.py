@@ -9,6 +9,33 @@ class ResponseTracking:
     def __init__(self, db_config: dict):
         self.config = db_config 
 
+    def delete_by_id(self, id) -> bool:
+        """Delete a record from estado_factura_venta by ID"""
+        try:
+            with psycopg2.connect(**self.config) as conn:
+                with conn.cursor() as cursor:
+                    # Delete record by ID
+                    query = sql.SQL("""
+                        DELETE FROM estado_factura_venta
+                        WHERE id = %s
+                        RETURNING id
+                    """)
+                    
+                    cursor.execute(query, (id,))
+                    deleted_id = cursor.fetchone()
+                    conn.commit()
+                    
+                    if deleted_id:
+                        print(f"Successfully deleted record with ID {id}")
+                        return True
+                    else:
+                        print(f"No record found with ID {id}")
+                        return False
+                        
+        except Exception as e:
+            print(f"Error deleting record with ID {id}: {e}")
+            return False
+
     def update_status(self, 
                         id,
                         folio: str, 
