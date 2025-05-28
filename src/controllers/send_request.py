@@ -50,9 +50,9 @@ class SendRequest:
         # Separate operations by type
         creates = responses_dict.get('create', [])
         updates = responses_dict.get('update', [])
-        print("Updates:")
-        print(updates)
         deletes = responses_dict.get('delete', [])
+        print("delete:")
+        print(deletes)
         
 
         # Initialize results dictionary
@@ -261,7 +261,7 @@ class SendRequest:
                     # Send the single record
                     print(f"Sending record for folio {folio}")
                     post_data = json.dumps(single_payload, cls=CustomJSONEncoder)
-                    print(f"POST Request URL: {self.base_url}/{40}?api_key={self.api_key}")
+                    print(f"POST Request URL: {self.base_url}/{item.get("id")}?api_key={self.api_key}")
                     print(f"POST Request Data: {post_data}")
                     
                     response = requests.post(
@@ -359,7 +359,7 @@ class SendRequest:
         return results
     
 
-    def delete(self, deletes):# TO DO : update whole method <------------------------------------------------------
+    def delete(self, deletes):
         results = {
             'success': [],  # Will store folio -> result for successful operations
             'failed': []   # Will store folio -> result for failed operations
@@ -376,7 +376,7 @@ class SendRequest:
                 folio_to_item = {}
 
                 for item in batch:
-                   
+                    print(item)
                     folio = item.get('folio')
 
                     folio_to_item[folio] = item
@@ -392,19 +392,36 @@ class SendRequest:
                 
                 # Extract folios for the URL
                 folios = [item.get('folio') for item in batch]
-                comma_separated_folios = ",".join(folios)
+                ids = [str(item.get('id')) for item in batch]
+                
+                # If only one element, use the ID directly; otherwise join with comma
+                if len(ids) == 1:
+                    all_ids = ids[0]
+                else:
+                    all_ids = "%2C".join(ids)
+
+                # Send the single record
+                print(f"Sending record for folio {folio}")
+                #post_data = json.dumps(single_payload, cls=CustomJSONEncoder)
+                print(f"POST Request URL: {self.base_url}/{all_ids}?api_key={self.api_key}")
+               
+                    
                 
                 # Make batch DELETE request with folios in the URL
                 response = requests.delete(
-                    f"{self.base_url}/{comma_separated_folios}", 
+                    f"{self.base_url}/{all_ids}?api_key={self.api_key}", 
                     headers=self.headers
                 )
+
+                print(f"Response Status Code for folio {folio}: {response.status_code}")
+                print(f"Response Headers for folio {folio}: {response.headers}")
                 
                 if response.status_code in [200, 201, 202, 204]:
                     # For DELETE operations, the response might be different from create/update
                     # It could be a list of deleted IDs or a success message
                     try:
                         batch_response = response.json()
+                        print(batch_response)
                         
                         # If the response contains a list of deleted items
                         if isinstance(batch_response, list):
