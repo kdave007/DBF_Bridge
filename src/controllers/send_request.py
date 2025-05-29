@@ -423,8 +423,21 @@ class SendRequest:
                         batch_response = response.json()
                         print(batch_response)
                         
+                        # Check for the specific success response format: {"return": "Eliminado(s) con éxito"}
+                        if isinstance(batch_response, dict) and batch_response.get('return') == "Eliminado(s) con éxito":
+                            # Success response for batch deletion - all items were successfully deleted
+                            for folio in folios:
+                                if folio in folio_to_item:
+                                    original_item = folio_to_item.get(folio)
+                                    dbf_record = original_item.get('dbf_record', {})
+                                    
+                                    results['success'].append({
+                                        'folio': folio,
+                                        'id': original_item.get('id'),
+                                        'status': response.status_code
+                                    })
                         # If the response contains a list of deleted items
-                        if isinstance(batch_response, list):
+                        elif isinstance(batch_response, list):
                             for deleted_item in batch_response:
                                 folio = deleted_item.get('folio')
                                 if folio and folio in folio_to_item:
@@ -433,20 +446,19 @@ class SendRequest:
                                     
                                     results['success'].append({
                                         'folio': folio,
-                                        'id':deleted_item.get('id'),
+                                        'id': deleted_item.get('id'),
                                         'status': response.status_code
                                     })
-                        # If the response is just a success message or empty
+                        # If the response is any other format
                         else:
                             # Consider all items in the batch as successfully deleted
                             for folio in folios:
                                 if folio in folio_to_item:
                                     original_item = folio_to_item.get(folio)
-                                    dbf_record = original_item.get('dbf_record', {})
                                     
                                     results['success'].append({
                                         'folio': folio,
-                                        'id':deleted_item.get('id'),
+                                        'id': original_item.get('id'),
                                         'status': response.status_code
                                     })
                     except ValueError:
@@ -458,9 +470,7 @@ class SendRequest:
                                 
                                 results['success'].append({
                                     'folio': folio,
-                                    'fecha_emision': dbf_record.get('fecha'),
-                                    'total_partidas': len(dbf_record.get('detalles', [])),
-                                    'hash': original_item.get('dbf_hash', ''),
+                                    'id': original_item.get('id'),
                                     'status': response.status_code
                                 })
         
@@ -483,7 +493,7 @@ class SendRequest:
                         
             except Exception as e:
                 error_message = f"Exception during batch create: {str(e)}"
-              
+                print(f' error message {error_message}')
                 # Mark all records in the batch as failed
                 for item in batch_payload:
                         error_message = f"Batch create failed with status {response.status_code}: {response.text}"
