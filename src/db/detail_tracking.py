@@ -12,11 +12,12 @@ class DetailTracking:
         self.config = db_config
     
     def insert_or_update_detail(self, 
+                               id,
                                folio: str, 
                                hash_detalle: str,
                                fecha: date,
-                               estado: str = 'pendiente',
-                               accion: str = 'create',
+                               estado,
+                               accion,
                                ref: str = '') -> bool:
         """
         Inserta un nuevo registro de detalle o actualiza uno existente
@@ -37,9 +38,9 @@ class DetailTracking:
                 with conn.cursor() as cursor:
                     query = sql.SQL("""
                         INSERT INTO detalle_estado (
-                            folio, hash_detalle, fecha, estado, accion, ref
+                            id,folio, hash_detalle, fecha, estado, accion, ref
                         ) VALUES (%s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (folio, hash_detalle) 
+                        ON CONFLICT (id) 
                         DO UPDATE SET 
                             estado = EXCLUDED.estado,
                             accion = EXCLUDED.accion,
@@ -90,14 +91,14 @@ class DetailTracking:
             logging.error(f"Error al obtener detalles por rango de fechas: {e}")
             return []
     
-    def batch_replace_by_folio(self, details: List[Dict]) -> bool:
+    def batch_replace_by_id(self, details: List[Dict]) -> bool:
         """
-        Procesa múltiples detalles en una sola transacción, eliminando todos los registros
-        existentes para cada folio antes de insertar los nuevos.
+        Procesa múltiples detalles en una sola transacción, utilizando el ID como referencia
+        principal en lugar del folio.
         
         Args:
             details: Lista de diccionarios con los detalles a insertar
-                Cada diccionario debe contener: folio, hash_detalle, fecha, estado, accion
+                Cada diccionario debe contener: id, folio, hash_detalle, fecha, estado, accion
                 
         Returns:
             True si la operación fue exitosa, False en caso contrario
@@ -107,34 +108,31 @@ class DetailTracking:
             
         try:
             with psycopg2.connect(**self.config) as conn:
-                # Group details by folio
-                details_by_folio = {}
+                # Group details by ID
+                details_by_id = {}
                 for detail in details:
-                    folio = detail.get('folio')
-                    if folio:
-                        if folio not in details_by_folio:
-                            details_by_folio[folio] = []
-                        details_by_folio[folio].append(detail)
+                    detail_id = detail.get('id')
+                    if detail_id:
+                        if detail_id not in details_by_id:
+                            details_by_id[detail_id] = []
+                        details_by_id[detail_id].append(detail)
                 
                 # Track successful operations
                 deleted_count = 0
                 inserted_count = 0
                 
-                # Process each folio in a separate transaction
-                for folio, folio_details in details_by_folio.items():
+                # Process each ID in a separate transaction
+                for detail_id, id_details in details_by_id.items():
                     try:
-                        # First delete all existing records for this folio
+                        # First delete all existing records for this ID
                         with conn.cursor() as cursor:
-                            delete_query = "DELETE FROM detalle_estado WHERE folio = %s"
-                            cursor.execute(delete_query, (folio,))
+                            delete_query = "DELETE FROM detalle_estado WHERE id = %s"
+                            cursor.execute(delete_query, (detail_id,))
                             deleted_count += cursor.rowcount
-                            print(f"Deleted {cursor.rowcount} existing records for folio {folio}")
+                            print(f"Deleted {cursor.rowcount} existing records for ID {detail_id}")
                             
-                        # Then insert all new records for this folio
+                        # Then insert all new records for this ID
                         with conn.cursor() as cursor:
-                            # Get the next available index for this folio
-                            index_counter = 1
-                            
                             # Insert query
                             insert_query = """
                                 INSERT INTO detalle_estado (
@@ -142,11 +140,10 @@ class DetailTracking:
                                 ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                             """
                             
-                            # Insert each detail
-                            for detail in folio_details:
-                                # Create composite ID from folio and index
-                                composite_id = f"{folio}-{index_counter}"
-                                index_counter += 1
+                            # Insert each detail (should be just one per ID)
+                            for detail in id_details:
+                                # Get the folio from the detail
+                                folio = detail.get('folio', '')
                                 
                                 # Get current date if fecha is not provided
                                 fecha = detail.get('fecha')
@@ -161,12 +158,12 @@ class DetailTracking:
                                     ref_value = detail['ref']
                                 
                                 # Extract values
-                                detail_hash = detail.get('detail_hash') or detail.get('hash_detalle')
-                                estado = detail.get('estado', 'pendiente')
-                                operation = detail.get('operation') or detail.get('accion', 'create')
+                                detail_hash = detail.get('hash_detail') or detail.get('hash_detalle')
+                                estado = detail.get('estado', 'ca_completado')
+                                operation = detail.get('accion', 'creado')
                                 
                                 params = (
-                                    composite_id,
+                                    detail_id,  # Use the actual ID from the API
                                     folio,
                                     detail_hash,
                                     fecha,
@@ -176,26 +173,26 @@ class DetailTracking:
                                 )
                                 
                                 # Debug print
-                                print(f'REPLACE: ID={composite_id}, FOLIO={folio}, HASH={detail_hash}, '
+                                print(f'REPLACE: ID={detail_id}, FOLIO={folio}, HASH={detail_hash}, '
                                       f'FECHA={fecha}, ESTADO={estado}, ACCION={operation}, REF={ref_value}')
                                 
                                 cursor.execute(insert_query, params)
                                 inserted_count += 1
                         
-                        # Commit the transaction for this folio
+                        # Commit the transaction for this ID
                         conn.commit()
-                        print(f"Successfully processed folio {folio}: deleted {deleted_count}, inserted {inserted_count}")
+                        print(f"Successfully processed ID {detail_id}: deleted {deleted_count}, inserted {inserted_count}")
                         
                     except Exception as e:
-                        # If anything goes wrong, rollback this folio's transaction
+                        # If anything goes wrong, rollback this ID's transaction
                         conn.rollback()
-                        logging.error(f"Error processing folio {folio}: {e}")
-                        # Continue with the next folio
+                        logging.error(f"Error processing ID {detail_id}: {e}")
+                        # Continue with the next ID
                         
                 return inserted_count > 0
                 
         except Exception as e:
-            logging.error(f"Error in batch_replace_by_folio: {e}")
+            logging.error(f"Error in batch_replace_by_id: {e}")
             return False
     
     def batch_insert_details(self, details: List[Dict]) -> bool:

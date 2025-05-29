@@ -3,8 +3,11 @@ import sys
 from datetime import date
 import hashlib
 from turtle import reset
+
+from requests import post
 from src.config.db_config import PostgresConnection
 from src.db.detail_tracking import DetailTracking
+from .send_details import SendDetails
 
 
 
@@ -12,158 +15,43 @@ class DetailsController:
     def __init__(self) -> None:
         self.db = PostgresConnection()
         pass
-
-    def post_all(self, records):
-        """
-        Post records one by one to the API endpoint
-        
-        Args:
-            records: List of records to post
-            
-        Returns:
-            Dictionary with counts of processed records and their status
-        """
-        import requests
-        import json
-        
-        # API configuration
-        base_url = "https://c8.velneo.com:17262/api/vLatamERP_db_dat/v2/mov_g"
-        api_key = "123456"
-        
-        # Set headers for API requests
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "x-process-json": "true"
-        }
-        
-        # Track results
-        result_counts = {
-            'total': len(records),
-            'success': 0,
-            'failed': 0,
-            'records': []
-        }
-        
-        print(f"\n=== Posting {len(records)} records one by one ===\n")
-        
-        # Process each record individually
-        for i, record in enumerate(records):
-            try:
-                # Prepare the payload for posting based on the record data
-                # Map the record fields to the expected payload structure
-                single_payload = {
-                    "emp": "1",
-                    "emp_div": "1",
-                    "can": record.get('cantidad'),
-                    "pre": record.get('precio'),
-                    "fch": record.get('fecha'),
-                    "art": record.get('ref'),
-                    "vta_fac": record.get('folio'),
-                    "vta_fac_num_lin": i
-                }
-                
-                # Convert payload to JSON
-                post_data = json.dumps(single_payload)
-                post_url = f"{base_url}?////api_key={api_key}"
-                
-                print(f"\n[{i+1}/{len(records)}] Posting record for folio: {record.get('folio')}")
-                print(f"URL: {post_url}")
-                print(f"Payload: {post_data}")
-                
-                # Send the POST request
-                response = requests.post(post_url, data=post_data, headers=headers)
-                
-                # Process the response
-                status_code = response.status_code
-                print(f"Response Status: {status_code}")
-                
-                record_result = {
-                    'folio': record.get('folio'),
-                    'ref': record.get('ref'),
-                    'status_code': status_code,
-                    'success': False
-                }
-                
-                # Check if the request was successful
-                if status_code in [200, 201, 202, 204]:
-                    try:
-                        response_json = response.json()
-                        print(f"Response: {json.dumps(response_json, indent=2)}")
-                        record_result['response'] = response_json
-                        
-                        # Extract ID from 'mov_g' key if it exists
-                        if 'mov_g' in response_json and isinstance(response_json['mov_g'], list) and len(response_json['mov_g']) > 0:
-                            record_id = response_json['mov_g'][0].get('id')
-                            if record_id:
-                                record_result['id'] = record_id
-                                print(f"Extracted ID: {record_id}")
-                        
-                        record_result['success'] = True
-                        result_counts['success'] += 1
-                    except ValueError:
-                        print(f"Response (not JSON): {response.text}")
-                        record_result['response'] = response.text
-                        record_result['success'] = True
-                        result_counts['success'] += 1
-                else:
-                    print(f"Failed with status {status_code}: {response.text}")
-                    record_result['error'] = response.text
-                    result_counts['failed'] += 1
-                
-                # Add the record result to the tracking
-                result_counts['records'].append(record_result)
-                
-            except Exception as e:
-                print(f"Exception while posting record: {str(e)}")
-                result_counts['failed'] += 1
-                result_counts['records'].append({
-                    'folio': record.get('folio'),
-                    'ref': record.get('ref'),
-                    'success': False,
-                    'error': str(e)
-                })
-        
-        # Print summary
-        print("\n=== Post All Summary ===")
-        print(f"Total records: {result_counts['total']}")
-        print(f"Successful: {result_counts['success']}")
-        print(f"Failed: {result_counts['failed']}")
-        print("========================\n")
-        
-        return result_counts
         
     def process(self, results, start_date, end_date):
-        print('CHECKPOINT')
 
-        # Process API results to get combined detail records
+        send_details = SendDetails()
+
+        # Process API results to get combined detail records, fetch them out of every CA and merge details in one dictionary
         combined = self.process_results(results)
         delete_folios = self.process_delete_results(results)
 
-        #inserted = self.insert_records(self.db, combined)
-
-            # Get existing records from database
+        # Get existing records from database
         sql_records = self.get_sql_records(self.db, start_date, end_date)
 
         if not sql_records :
-            self.post_all(combined);
-        
+            #post all records found in the dbf data
+            print("Inserting all records found, cause no sql data found")
+            post_results = send_details.req_post(combined)
+            print(f' post results {post_results['records']}')
+
+            if post_results['records']:
+                #insert all the records posted that succeeded
+                self.insert_records(self.db, post_results['records'])
+        else :      
             # Compare records to find differences
-        comparison_result = self.analyze_sync(combined, sql_records)
-        
-        # Print comparison summary
-        self.print_sync_report(comparison_result)
-        
-        # Process operations based on comparison results
-        operations = comparison_result.get('operations', {})
+            print(f'COMBINED {combined}')
+            comparison_result = self.analyze_sync(combined, sql_records)
+            # Print comparison summary
+            self.print_sync_report(comparison_result)
 
+            # Process operations based on comparison results
+            self.process_operations(comparison_result, send_details)
+        
+        
+       
         
 
-        self.post_details_by_batches(results, "http://localhost:3000/api/data", "http://localhost:3000/api/data", max_batch_size=100)
-        posted_success = True 
-
-        if posted_success:
-            inserted = self.insert_records(self.db, combined)
+        #self.post_details_by_batches(results, "http://localhost:3000/api/data", "http://localhost:3000/api/data", max_batch_size=100)
+       
         
         # # Process CREATE operations
         # if operations.get('create') and posted_success: #remove the empty sql records condition, and replace it with the posting details results
@@ -196,7 +84,7 @@ class DetailsController:
             #print(f"Inserted/updated {inserted} records")
             
 
-
+   
     def process_results(self, results):
         combined_details = []
         
@@ -264,13 +152,37 @@ class DetailsController:
         detail_tracker = DetailTracking(db_connection.db_config)
         
         # Use batch_insert_details method to insert all records at once
-        success = detail_tracker.batch_replace_by_folio(records)
+        success = detail_tracker.batch_replace_by_id(records)
         
         if success:
             return len(records)
         else:
             print("Error inserting records")
             return 0
+
+    def process_operations(self, data, send_details): #receive data and send_details object to post data
+        operations = data["operations"]
+        
+        # Process CREATE operations if data exists
+        if operations["create"]:  # Checks if list is non-empty
+            # Add your create validation/processing logic here
+            print(f"Processing CREATE operations:{operations["create"]}")
+            create_result = send_details.req_post(operations["create"])
+
+        
+        # Process UPDATE operations if data exists
+        if operations["update"]:  # Checks if list is non-empty
+            # Add your update validation/processing logic here
+            print(f"Processing UPDATE operations:{operations["update"]}")
+            create_result = send_details.req_update(operations["update"])
+          
+        
+        # Process DELETE operations if data exists
+        if operations["delete"]:  # Checks if list is non-empty
+            # Add your delete validation/processing logic here
+            print("Processing delete operations:", operations["delete"])
+            
+    
             
     def get_record_key(self, record, is_sql=False):
         """
@@ -377,6 +289,7 @@ class DetailsController:
                                 if (c['folio'], c['ref']) == key), None)
             
             if combined_master:
+                print(f' master {combined_master}')
                 for sql_item in sql_items[key]:
                     if sql_item['hash_detalle'] != combined_master['detail_hash']:
                         to_update.append({
@@ -386,7 +299,8 @@ class DetailsController:
                             'fecha': combined_master['fecha'],
                             'old_hash': sql_item['hash_detalle'],
                             'detail_hash': combined_master['detail_hash'],
-                            'accion':'modificado'
+                            'accion':'modificado',
+                            'details': combined_master
                         })
       
         return {
