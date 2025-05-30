@@ -130,6 +130,8 @@ class DetailTracking:
                 port=self.config['port']
             ) as conn:
                 # Group details by ID
+                print(f'DETAILS {details}')
+
                 details_by_id = {}
                 for detail in details:
                     print(f'batch_replace_by_id {detail}')

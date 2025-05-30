@@ -239,7 +239,6 @@ class SendDetails:
                 
                 # Add the record result to the tracking
                 result_counts['records'].append(record_result)
-                print(f'record create results ------ {record_result}')
                 
             except Exception as e:
                 print(f"Exception while posting record: {str(e)}")
@@ -259,4 +258,4 @@ class SendDetails:
         print(f"Failed: {result_counts['failed']}")
         print("========================\n")
         
-        return result_counts['records']
+        return result_counts
