@@ -12,7 +12,14 @@ class ResponseTracking:
     def delete_by_id(self, id) -> bool:
         """Delete a record from estado_factura_venta by ID"""
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 with conn.cursor() as cursor:
                     # Delete record by ID
                     query = sql.SQL("""
@@ -46,7 +53,14 @@ class ResponseTracking:
                         fecha_emision: date) -> bool:
         """Actualiza o inserta estado de factura"""
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 with conn.cursor() as cursor:
                     # Insert o update si existe
                     query = sql.SQL("""

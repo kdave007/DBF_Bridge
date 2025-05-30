@@ -13,8 +13,10 @@ from .send_details import SendDetails
 
 class DetailsController:
     def __init__(self) -> None:
-        self.db = PostgresConnection()
-        pass
+        # Get database configuration as a dictionary
+        self.db_config = PostgresConnection.get_db_config()
+        # Create a PostgresConnection instance if needed
+        self.db = self.db_config
         
     def process(self, results, start_date, end_date):
 
@@ -102,7 +104,7 @@ class DetailsController:
                                 
                             detail_with_operation['operation'] = operation
                             
-                            detail_with_operation['id'] = record.get('id')
+                            detail_with_operation['parent_id'] = record.get('id')#pass the parent ca id to the detail
 
                             detail_with_operation['folio'] = record.get('folio')
                             
@@ -128,7 +130,8 @@ class DetailsController:
 
     def get_sql_records(self, db_connection, start_date, end_date):
         # Create a DetailTracking instance with the database configuration
-        detail_tracker = DetailTracking(db_connection.db_config)
+        # db_connection is now a dictionary, not a PostgresConnection object
+        detail_tracker = DetailTracking(db_connection)
         
         # Use the get_details_by_date_range method from DetailTracking
         records = detail_tracker.get_details_by_date_range(start_date, end_date)
@@ -141,7 +144,7 @@ class DetailsController:
         Insert or update records in the database
         
         Args:
-            db_connection: PostgresConnection instance
+            db_connection: Database configuration dictionary
             records: List of records to insert/update
             
         Returns:
@@ -152,7 +155,8 @@ class DetailsController:
             return 0
             
         # Create a DetailTracking instance with the database configuration
-        detail_tracker = DetailTracking(db_connection.db_config)
+        # db_connection is now a dictionary, not a PostgresConnection object
+        detail_tracker = DetailTracking(db_connection)
         
         # Use batch_insert_details method to insert all records at once
         success = detail_tracker.batch_replace_by_id(records)
@@ -171,6 +175,7 @@ class DetailsController:
             # Add your create validation/processing logic here
             print(f"Processing CREATE operations:{operations["create"]}")
             create_result = send_details.req_post(operations["create"])
+            self.insert_records(self.db, create_result)
 
         
         # Process UPDATE operations if data exists
@@ -178,6 +183,7 @@ class DetailsController:
             # Add your update validation/processing logic here
             print(f"Processing UPDATE operations:{operations["update"]}")
             create_result = send_details.req_update(operations["update"])
+            self.insert_records(self.db, operations['update'])
           
         
         # Process DELETE operations if data exists
@@ -304,7 +310,7 @@ class DetailsController:
                             'detail_hash': combined_master['detail_hash'],
                             'accion':'modificado',
                             'details': combined_master,
-                            'parent_id': combined_master.get('id',None)
+                            'parent_id': combined_master.get('parent_id',None)
                         })
       
         return {

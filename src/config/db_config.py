@@ -9,6 +9,27 @@ from pathlib import Path
 class PostgresConnection:
     _connection_pool = None
 
+    @staticmethod
+    def get_db_config() -> Dict[str, str]:
+        """
+        Returns the database configuration in the format needed by other classes.
+        Uses 'database' instead of 'dbname' for compatibility.
+        
+        Returns:
+            Dict[str, str]: Database configuration dictionary
+        """
+        # Create a temporary instance to access the configuration
+        temp_instance = PostgresConnection()
+        
+        # Return the configuration with the correct key names
+        return {
+            'host': temp_instance.db_config['host'],
+            'database': temp_instance.db_config['dbname'],  # Convert dbname to database
+            'user': temp_instance.db_config['user'],
+            'password': temp_instance.db_config['password'],
+            'port': temp_instance.db_config['port']
+        }
+
     def __init__(self):
         """Initialize PostgreSQL connection with environment variables"""
         # Load environment variables

@@ -2,7 +2,7 @@ import os
 import sys
 from turtle import st
 from pathlib import Path
-from src.db import response_tracking
+from src.config.db_config import PostgresConnection
 from src.db.response_tracking import ResponseTracking
 import requests
 import json
@@ -19,14 +19,10 @@ class CustomJSONEncoder(json.JSONEncoder):
 class SendRequest:
 
     def __init__(self):
-        db_config = {
-            'host': 'localhost',
-            'database': 'suc_vel',
-            'user': 'postgres',
-            'password': 'comexcare',
-            'port': '5432'
-        }
-        self.response_tracking = ResponseTracking(db_config)
+        # Get database configuration as a dictionary
+        self.db_config = PostgresConnection.get_db_config()
+        # Initialize ResponseTracking with the configuration dictionary
+        self.response_tracking = ResponseTracking(self.db_config)
 
     def send(self, responses_dict):
         """Process API operations in batches of 100 and track results"""

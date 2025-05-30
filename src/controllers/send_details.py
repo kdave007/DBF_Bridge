@@ -84,7 +84,8 @@ class SendDetails:
                     'status_code': status_code,
                     "fecha": record.get('fecha'),
                     'success': False,
-                    'hash_detail': record.get('detail_hash')
+                    'hash_detail': record.get('detail_hash'),
+                    'detail_id':record.get('sql_id')
                 }
                 
                 # Check if the request was successful
@@ -97,8 +98,8 @@ class SendDetails:
                         if 'mov_g' in response_json and isinstance(response_json['mov_g'], list) and len(response_json['mov_g']) > 0:
                             record_id = response_json['mov_g'][0].get('id')
                             if record_id:
-                                record_result['id'] = record_id
-                                print(f"Extracted ID: {record_id}")
+                                record_result['detail_id'] = record_id
+                                print(f"Extracted detail update ID: {record_id}")
                         
                         record_result['success'] = True
                         result_counts['success'] += 1
@@ -221,8 +222,8 @@ class SendDetails:
                         if 'mov_g' in response_json and isinstance(response_json['mov_g'], list) and len(response_json['mov_g']) > 0:
                             record_id = response_json['mov_g'][0].get('id')
                             if record_id:
-                                record_result['id'] = record_id
-                                print(f"Extracted ID: {record_id}")
+                                record_result['detail_id'] = record_id
+                                print(f"Extracted detail ID: {record_id}")
                         
                         record_result['success'] = True
                         result_counts['success'] += 1
@@ -238,6 +239,7 @@ class SendDetails:
                 
                 # Add the record result to the tracking
                 result_counts['records'].append(record_result)
+                print(f'record create results ------ {record_result}')
                 
             except Exception as e:
                 print(f"Exception while posting record: {str(e)}")
@@ -257,4 +259,4 @@ class SendDetails:
         print(f"Failed: {result_counts['failed']}")
         print("========================\n")
         
-        return result_counts
+        return result_counts['records']

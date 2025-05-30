@@ -14,7 +14,14 @@ class PostgresTracking:
     def get_by_lote(self, id_lote: str = None, limit: int = 100) -> List[Dict]:
         """Obtiene estados de facturas"""
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 with conn.cursor() as cursor:
                     base_query = sql.SQL("""
                         SELECT id, folio, total_partidas, descripcion, 
@@ -45,7 +52,14 @@ class PostgresTracking:
                             fecha_emision: date = None) -> bool:
         """Actualiza o inserta estado de factura"""
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 with conn.cursor() as cursor:
                     # Solo insert si no existe
                     query = sql.SQL("""
@@ -75,7 +89,14 @@ class PostgresTracking:
                               new_hash: str = None) -> bool:
         """Actualiza solo estado y hash de factura existente"""
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 with conn.cursor() as cursor:
                     if new_hash:
                         query = sql.SQL("""
@@ -112,19 +133,24 @@ class PostgresTracking:
         Returns:
             Lista de registros completos en el rango
         """
-        import psycopg2
-        
-        query = """
-            SELECT id, folio, total_partidas,
-                   hash, fecha_procesamiento,estado, fecha_emision
-            FROM estado_factura_venta
-            WHERE fecha_emision BETWEEN %s AND %s
-            ORDER BY fecha_emision
-        """
-        
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 with conn.cursor() as cursor:
+                    query = """
+                        SELECT id, folio, total_partidas,
+                               hash, fecha_procesamiento,estado, fecha_emision
+                        FROM estado_factura_venta
+                        WHERE fecha_emision BETWEEN %s AND %s
+                        ORDER BY fecha_emision
+                    """
+                    
                     # Format dates for better debugging output
                     print(f"\nExecuting SQL query with dates: {start_date} to {end_date}")
                     
@@ -172,7 +198,14 @@ class PostgresTracking:
             logging.warning("Fecha referencia no proporcionada, usando fecha actual")
             
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 with conn.cursor() as cursor:
                     query = sql.SQL("""
                         INSERT INTO lote_diario (
@@ -214,7 +247,14 @@ class PostgresTracking:
             fecha_referencia = datetime.now().date()
         
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 try:
                     cursor = conn.cursor()
                     
@@ -318,7 +358,14 @@ class PostgresTracking:
             A dictionary with the lote data or None if not found
         """
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 with conn.cursor() as cursor:
                     query = """
                         SELECT lote, fecha_insercion, fecha_referencia, hash_lote

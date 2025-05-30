@@ -34,7 +34,14 @@ class DetailTracking:
             True si la operación fue exitosa, False en caso contrario
         """
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 with conn.cursor() as cursor:
                     query = sql.SQL("""
                         INSERT INTO detalle_estado (
@@ -73,7 +80,14 @@ class DetailTracking:
             Lista de diccionarios con los detalles encontrados
         """
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 with conn.cursor() as cursor:
                     query = sql.SQL("""
                         SELECT id, folio, hash_detalle, fecha, estado, accion, ref
@@ -107,11 +121,19 @@ class DetailTracking:
             return True  # Nothing to process
             
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 # Group details by ID
                 details_by_id = {}
                 for detail in details:
-                    detail_id = detail.get('id')
+                    print(f'batch_replace_by_id {detail}')
+                    detail_id = detail.get('detail_id') or  detail.get('sql_id')#here goes the id not parent id
                     if detail_id:
                         if detail_id not in details_by_id:
                             details_by_id[detail_id] = []
@@ -158,8 +180,8 @@ class DetailTracking:
                                     ref_value = detail['ref']
                                 
                                 # Extract values
-                                detail_hash = detail.get('hash_detail') or detail.get('hash_detalle')
-                                estado = detail.get('estado', 'ca_completado')
+                                detail_hash = detail.get('hash_detail') or detail.get('hash_detalle') or detail.get('detail_hash')
+                                estado = 'pa_completado'
                                 operation = detail.get('accion', 'creado')
                                 
                                 params = (
@@ -211,7 +233,14 @@ class DetailTracking:
             return True  # Nothing to insert
             
         try:
-            with psycopg2.connect(**self.config) as conn:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
                 # First, get existing folios to determine starting counters
                 folio_counters = {}
                 

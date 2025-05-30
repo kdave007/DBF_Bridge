@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, date
 from typing import Dict, List, Optional, Any
-
+from src.config.db_config import PostgresConnection
 from src.db.postgres_tracking import PostgresTracking
 
 
@@ -11,21 +11,25 @@ class DBFSQLComparator:
     Handles both day-level batch comparisons and detailed record-by-record comparisons.
     """
     
-    def __init__(self, db_config: Dict[str, str] = None):
+    def __init__(self, db_config: Any = None):
         """
         Initialize the comparator with database configuration.
         
         Args:
-            db_config: Dictionary with database connection parameters.
+            db_config: Either a PostgresConnection object or a dictionary with database connection parameters.
                        If None, default configuration will be used.
         """
-        self.db_config = db_config or {
-            'host': 'localhost',
-            'database': 'suc_vel',
-            'user': 'postgres',
-            'password': 'comexcare',
-            'port': '5432'
-        }
+        # Check if db_config is a PostgresConnection object or a dictionary
+        if isinstance(db_config, PostgresConnection):
+            self.db = db_config
+            self.db_config = PostgresConnection.get_db_config()
+        elif isinstance(db_config, dict):
+            # It's already a config dictionary
+            self.db_config = db_config
+        else:
+            # Use default configuration
+            self.db_config = PostgresConnection.get_db_config()
+            
         self.tracker = PostgresTracking(self.db_config)
 
     def add_all(self, dbf_records: Dict[str, Any]) -> Dict[str, Any]:

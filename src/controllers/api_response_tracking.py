@@ -1,26 +1,20 @@
 import os
 import sys
 from datetime import datetime, date
-
+from src.config.db_config import PostgresConnection
 from src.db.response_tracking import ResponseTracking
 
 
 class APIResponseTracking:
     def __init__(self):
-        pass
+       pass
 
     def update_tracker(self, responses_status):
-  
-        db_config = {
-            'host': 'localhost',
-            'database': 'suc_vel',
-            'user': 'postgres',
-            'password': 'comexcare',
-            'port': '5432'
-        }
-
-
-        self.resp_tracking = ResponseTracking(db_config)
+        # Get database configuration as a dictionary instead of a PostgresConnection instance
+        self.db_config = PostgresConnection.get_db_config()
+        
+        # Initialize ResponseTracking with the configuration dictionary
+        self.resp_tracking = ResponseTracking(self.db_config)
 
         status_create = self._create_op(responses_status['create'])
         print(f'status_create: {status_create}')

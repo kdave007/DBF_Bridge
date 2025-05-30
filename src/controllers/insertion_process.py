@@ -3,6 +3,7 @@ import hashlib
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from src.db.postgres_tracking import PostgresTracking
+from src.config.db_config import PostgresConnection
 
 class InsertionProcess:
     """
@@ -15,15 +16,10 @@ class InsertionProcess:
         Initialize the InsertionProcess with database configuration.
         
         Args:
-            db_config: Optional database configuration dictionary. If not provided, default config will be used.
+            db_config: Optional database configuration dictionary. If not provided, config from PostgresConnection will be used.
         """
-        self.db_config = db_config or {
-            'host': 'localhost',
-            'database': 'suc_vel',
-            'user': 'postgres',
-            'password': 'comexcare',
-            'port': '5432'
-        }
+        # Use the provided config or get it from PostgresConnection
+        self.db_config = db_config or PostgresConnection.get_db_config()
         
         self.tracker = PostgresTracking(self.db_config)
     

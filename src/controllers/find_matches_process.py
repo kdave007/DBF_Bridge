@@ -2,7 +2,7 @@ import os
 import sys
 from turtle import st
 from pathlib import Path
-
+from src.config.db_config import PostgresConnection
 # Add project root to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(project_root)
@@ -18,14 +18,8 @@ from src.controllers.insertion_process import InsertionProcess
 class MatchesProcess:
 
     def __init__(self) -> None:
-        # Database configuration
-        self.db_config = {
-            'host': 'localhost',
-            'database': 'suc_vel',
-            'user': 'postgres',
-            'password': 'comexcare',
-            'port': '5432'
-        }
+        # Get database configuration
+        self.db_config = PostgresConnection.get_db_config()
         
         # Initialize the comparator and insertion processor
         self.comparator = DBFSQLComparator(self.db_config)
@@ -113,13 +107,8 @@ class MatchesProcess:
         """Obtiene datos SQL para comparación"""
         from src.db.postgres_tracking import PostgresTracking
         
-        db_config = {
-            'host': 'localhost',
-            'database': 'suc_vel',
-            'user': 'postgres',
-            'password': 'comexcare',
-            'port': '5432'
-        }
+        # Get database configuration from PostgresConnection
+        db_config = PostgresConnection.get_db_config()
         
         tracker = PostgresTracking(db_config)
         return tracker.get_records_by_date_range(start_date, end_date)
