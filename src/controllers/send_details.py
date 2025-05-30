@@ -57,8 +57,9 @@ class SendDetails:
                     "pre": record['details'].get('precio'),
                     "fch": record['details'].get('fecha'),
                     "art": record.get('ref'),
-                    "vta_fac": record.get('folio'),
-                    "vta_fac_num_lin": i
+                    "vta_fac": record.get('parent_id'),
+                    "vta_fac_num_lin": i+1,
+                    "und_med":1
                 }
                 
                 # Convert payload to JSON
@@ -180,8 +181,9 @@ class SendDetails:
                     "pre": record.get('precio'),
                     "fch": record.get('fecha'),
                     "art": record.get('ref'),
-                    "vta_fac": record.get('folio'),
-                    "vta_fac_num_lin": i
+                    "vta_fac": record.get('id'),
+                    "vta_fac_num_lin": i+1,
+                    "und_med":1
                 }
                 
                 # Convert payload to JSON

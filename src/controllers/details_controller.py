@@ -101,6 +101,9 @@ class DetailsController:
                                 detail_with_operation['ref'] = detail_with_operation.pop('REF')
                                 
                             detail_with_operation['operation'] = operation
+                            
+                            detail_with_operation['id'] = record.get('id')
+
                             detail_with_operation['folio'] = record.get('folio')
                             
                             # Parse date properly - extract just the date part (remove time)
@@ -117,7 +120,7 @@ class DetailsController:
 
                             combined_details.append(detail_with_operation)
         print(' ---   --- --- --- --- --- ---')
-        print(results)
+        print(f' RESIDENTTTTT {results}')
         
         return combined_details
 
@@ -300,7 +303,8 @@ class DetailsController:
                             'old_hash': sql_item['hash_detalle'],
                             'detail_hash': combined_master['detail_hash'],
                             'accion':'modificado',
-                            'details': combined_master
+                            'details': combined_master,
+                            'parent_id': combined_master.get('id',None)
                         })
       
         return {
