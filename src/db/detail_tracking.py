@@ -68,6 +68,42 @@ class DetailTracking:
             logging.error(f"Error al insertar/actualizar detalle: {e}")
             return False
     
+    def get_details_by_folio(self, folio: str) -> List[Dict]:
+        """
+        Obtiene todos los detalles asociados a un folio específico
+        
+        Args:
+            folio: Número de folio a consultar
+            
+        Returns:
+            Lista de diccionarios con los detalles encontrados
+        """
+        try:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
+                with conn.cursor() as cursor:
+                    query = sql.SQL("""
+                        SELECT id, folio, hash_detalle, fecha, estado, accion, ref
+                        FROM detalle_estado
+                        WHERE folio = %s
+                        ORDER BY id ASC
+                    """)
+                    
+                    cursor.execute(query, (folio,))
+                    
+                    columns = [desc[0] for desc in cursor.description]
+                    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+                    
+        except Exception as e:
+            logging.error(f"Error al obtener detalles por folio: {e}")
+            return []
+    
     def get_details_by_date_range(self, start_date: date, end_date: date) -> List[Dict]:
         """
         Obtiene todos los detalles en un rango de fechas
@@ -339,4 +375,79 @@ class DetailTracking:
                     
         except Exception as e:
             logging.error(f"Error al insertar detalles en lote: {e}")
+            return False
+
+
+    def delete_by_folio(self, folio) -> bool:
+        """
+        Elimina todos los registros asociados a un folio específico
+        
+        Args:
+            folio: Número de folio a eliminar
+            
+        Returns:
+            True si la operación fue exitosa, False en caso contrario
+        """
+        try:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
+                with conn.cursor() as cursor:
+                    query = sql.SQL("""
+                        DELETE FROM detalle_estado
+                        WHERE folio = %s
+                    """)
+                    
+                    cursor.execute(query, (folio,))
+                    
+                    # Get number of rows affected
+                    rows_deleted = cursor.rowcount
+                    conn.commit()
+                    
+                    return rows_deleted > 0
+                    
+        except Exception as e:
+            logging.error(f"Error al eliminar registros por folio: {e}")
+            return False
+
+    def delete_by_id(self, id) -> bool:
+        """
+        Elimina un registro específico por su ID
+        
+        Args:
+            id: Identificador único del registro a eliminar
+            
+        Returns:
+            True si la operación fue exitosa, False en caso contrario
+        """
+        try:
+            # Connect with explicit parameters instead of using **
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
+                with conn.cursor() as cursor:
+                    query = sql.SQL("""
+                        DELETE FROM detalle_estado
+                        WHERE id = %s
+                    """)
+                    
+                    cursor.execute(query, (id,))
+                    
+                    # Get number of rows affected
+                    rows_deleted = cursor.rowcount
+                    conn.commit()
+                    
+                    return rows_deleted > 0
+                    
+        except Exception as e:
+            logging.error(f"Error al eliminar registro por ID: {e}")
             return False

@@ -48,42 +48,6 @@ class DetailsController:
             # Process operations based on comparison results
             self.process_operations(comparison_result, send_details)
         
-        
-       
-        
-
-        #self.post_details_by_batches(results, "http://localhost:3000/api/data", "http://localhost:3000/api/data", max_batch_size=100)
-       
-        
-        # # Process CREATE operations
-        # if operations.get('create') and posted_success: #remove the empty sql records condition, and replace it with the posting details results
-        #     print(f'CREATE STRUC { operations.get('create')}')
-        #     print("Tipo de datos:", type(operations.get('create'))) 
-        #     inserted = self.insert_records(self.db, operations.get('create') )
-
-        #     print(f"Inserted {inserted} new records")
-        
-        # # Process UPDATE operations - could be implemented if needed
-        # if operations.get('update') and posted_success:
-        #     print(f'UPDATE STRUC { operations["update"] }')
-        #     print("Tipo de datos:", type(operations.get('update'))) 
-        #     inserted = self.insert_records(self.db, operations['update'] )
-        #     print(f"updated {inserted} new records")
-        #     update_records = [item['combined_record'] for item in operations['update']]
-        #     if update_records:
-        #         updated = self.update_records(self.db, update_records)
-        #         print(f"Updated {updated} records")
-        
-        # Process DELETE operations - could be implemented if needed
-        # if operations.get('delete'):
-        #     delete_records = [item['sql_record'] for item in operations['delete']]
-        #     if delete_records:
-        #         deleted = self.delete_records(self.db, delete_records)
-        #         print(f"Deleted {deleted} records")
-             
-            
-            #inserted = self.insert_records(self.db, combined)
-            #print(f"Inserted/updated {inserted} records")
             
 
    
@@ -413,49 +377,129 @@ class DetailsController:
         print("\n=================================================")
 
 
-    def process_delete_results(self, results):
+    # def process_delete_results(self, results):
+    #     """
+    #     Process API results to extract records from delete.success
+        
+    #     Args:
+    #         results: API response containing delete.success records
+            
+    #     Returns:
+    #         List of processed records from delete.success
+    #     """
+    #     delete_records = []
+        
+    #     # Check if delete operation exists and has success records
+    #     if 'delete' in results and 'success' in results['delete']:
+    #         for record in results['delete']['success']:
+    #             print(f'  PROCESSING DELETE RECORD: {record}')
+                
+    #             # Extract folio from the record
+    #             folio = record.get('folio')
+    #             if not folio:
+    #                 print(f"  WARNING: Record missing folio, skipping: {record}")
+    #                 continue
+                
+    #             # Create a record with the folio and operation type
+    #             delete_record = {
+    #                 'folio': folio,
+    #                 'operation': 'delete'
+    #             }
+                
+                
+    #             # Add the record to our list
+    #             delete_records.append(delete_record)
+    #             print(f'  ADDED DELETE RECORD: {delete_record}')
+        
+    #     print(f'TOTAL DELETE RECORDS PROCESSED: {len(delete_records)}')
+    #     return delete_records
+
+    
+    def process_delete_results(self, records):
         """
-        Process API results to extract records from delete.success
+        Elimina detalles de la base de datos y del API basado en los folios
         
         Args:
-            results: API response containing delete.success records
+            records: Lista de registros con folios a eliminar
             
         Returns:
-            List of processed records from delete.success
+            Dictionary con resultados de la operación
         """
-        delete_records = []
+        # Inicializar el objeto de seguimiento de detalles y el objeto para enviar detalles
+        detail_tracking = DetailTracking(self.db_config)
+        send_details = SendDetails()
         
-        # Check if delete operation exists and has success records
-        if 'delete' in results and 'success' in results['delete']:
-            for record in results['delete']['success']:
-                print(f'  PROCESSING DELETE RECORD: {record}')
-                
-                # Extract folio from the record
+        # Resultados para seguimiento
+        results = {
+            'total_folios': len(records),
+            'folios_processed': 0,
+            'details_found': 0,
+            'details_deleted_api': 0,
+            'details_deleted_db': 0,
+            'errors': 0
+        }
+        
+        # Procesar cada folio
+        print(f'Checking if any records to delete in this proccess : {records}')
+
+        if 'success' not in records['delete'] or not records['delete']['success']:
+            print("No delete detail records to process")
+            return []
+
+        for record in records['delete']['success']:
+            try:
                 folio = record.get('folio')
                 if not folio:
-                    print(f"  WARNING: Record missing folio, skipping: {record}")
+                    print(f"Registro sin folio, omitiendo: {record}")
+                    results['errors'] += 1
                     continue
                 
-                # Create a record with the folio and operation type
-                delete_record = {
-                    'folio': folio,
-                    'operation': 'delete'
-                }
+                print(f"\nProcesando eliminación para folio: {folio}")
                 
-                # Add fecha if available
-                fecha_str = record.get('fecha_emision')
-                if fecha_str:
-                    # Extract just the date part (before any space)
-                    fecha_parts = fecha_str.split(' ')
-                    if fecha_parts:
-                        delete_record['fecha'] = fecha_parts[0]
+                # Obtener todos los detalles asociados al folio de la base de datos
+                db_details = detail_tracking.get_details_by_folio(folio)
+                results['details_found'] += len(db_details)
                 
-                # Add the record to our list
-                delete_records.append(delete_record)
-                print(f'  ADDED DELETE RECORD: {delete_record}')
+                if not db_details:
+                    print(f"No se encontraron detalles para el folio {folio} en la base de datos")
+                    continue
+                
+                print(f"Encontrados {len(db_details)} detalles para el folio {folio}")
+                
+                # Enviar solicitud de eliminación al API para cada detalle
+                delete_result = send_details.delete_post(db_details)
+                
+                # Actualizar contadores basados en el resultado
+                results['details_deleted_api'] += delete_result['success']
+                
+                # Si la eliminación en el API fue exitosa, eliminar de la base de datos
+                if delete_result['success'] > 0:
+                    # Eliminar de la base de datos por folio
+                    db_delete_result = detail_tracking.delete_by_folio(folio)
+                    if db_delete_result:
+                        print(f"Eliminados registros del folio {folio} de la base de datos")
+                        results['details_deleted_db'] += len(db_details)
+                    else:
+                        print(f"Error al eliminar registros del folio {folio} de la base de datos")
+                        results['errors'] += 1
+                
+                results['folios_processed'] += 1
+                
+            except Exception as e:
+                print(f"Error al procesar folio para eliminación: {str(e)}")
+                results['errors'] += 1
         
-        print(f'TOTAL DELETE RECORDS PROCESSED: {len(delete_records)}')
-        return delete_records
+        # Imprimir resumen
+        print("\n=== Resumen de Eliminación ===")
+        print(f"Folios procesados: {results['folios_processed']}/{results['total_folios']}")
+        print(f"Detalles encontrados: {results['details_found']}")
+        print(f"Detalles eliminados del API: {results['details_deleted_api']}")
+        print(f"Detalles eliminados de la BD: {results['details_deleted_db']}")
+        print(f"Errores: {results['errors']}")
+        print("==============================\n")
+        
+        return results
+
         
     def post_details_by_batches(self, results, delete_url, post_url, max_batch_size=100):
         """

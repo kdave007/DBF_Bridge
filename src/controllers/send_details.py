@@ -259,3 +259,128 @@ class SendDetails:
         print("========================\n")
         
         return result_counts
+
+
+    def delete_post(self, records):
+        """
+        Delete records one by one from the API endpoint
+        
+        Args:
+            records: List of records to delete
+            
+        Returns:
+            Dictionary with counts of processed records and their status
+        """
+        import requests
+        import json
+        
+        # API configuration
+        base_url = "https://c8.velneo.com:17262/api/vLatamERP_db_dat/v2/mov_g"
+        api_key = "123456"
+        
+        # Set headers for API requests
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "x-process-json": "true"
+        }
+        
+        # Track results
+        result_counts = {
+            'total': len(records),
+            'success': 0,
+            'failed': 0,
+            'records': []
+        }
+        
+        print(f"\n=== Deleting {len(records)} records one by one ===\n")
+        
+        # Process each record individually
+        for i, record in enumerate(records):
+            try:
+                # Get the record ID for deletion
+                record_id = record.get('id')
+                
+                if not record_id:
+                    print(f"Skipping record without ID: {record}")
+                    result_counts['failed'] += 1
+                    result_counts['records'].append({
+                        'folio': record.get('folio'),
+                        'ref': record.get('ref'),
+                        'status_code': 400,
+                        "fecha": record.get('fecha'),
+                        'success': False,
+                        'error': "Missing record ID for deletion"
+                    })
+                    continue
+                
+                # Construct the delete URL with the record ID
+                delete_url = f"{base_url}/{record_id}?api_key={api_key}"
+                
+                print(f"\n[{i+1}/{len(records)}] Deleting record for folio: {record.get('folio')}")
+                print(f"URL: {delete_url}")
+                
+                # Send the DELETE request
+                response = requests.delete(delete_url, headers=headers)
+                
+                # Process the response
+                status_code = response.status_code
+                print(f"Response Status: {status_code}")
+                print(f'Original record: {record}')
+                
+                record_result = {
+                    'folio': record.get('folio'),
+                    'ref': record.get('ref'),
+                    'status_code': status_code,
+                    "fecha": record.get('fecha'),
+                    'success': False,
+                    'id': record_id
+                }
+                
+                # Check if the request was successful
+                if status_code in [200, 201, 202, 204]:
+                    try:
+                        # Try to parse JSON response if available
+                        try:
+                            response_json = response.json()
+                            print(f"Response: {json.dumps(response_json, indent=2)}")
+                        except ValueError:
+                            # Not a JSON response
+                            print(f"Response (not JSON): {response.text}")
+                            record_result['response'] = response.text
+                        
+                        record_result['success'] = True
+                        result_counts['success'] += 1
+                    except Exception as parse_error:
+                        # Handle any other parsing errors
+                        print(f"Error parsing response: {str(parse_error)}")
+                        record_result['response'] = response.text
+                        record_result['success'] = True  # Still consider it successful if status code was good
+                        result_counts['success'] += 1
+                else:
+                    print(f"Failed with status {status_code}: {response.text}")
+                    record_result['error'] = response.text
+                    result_counts['failed'] += 1
+                
+                # Add the record result to the tracking
+                result_counts['records'].append(record_result)
+                
+            except Exception as e:
+                print(f"Exception while deleting record: {str(e)}")
+                result_counts['failed'] += 1
+                result_counts['records'].append({
+                    'folio': record.get('folio'),
+                    'ref': record.get('ref'),
+                    "fecha": record.get('fecha'),
+                    'success': False,
+                    'error': str(e)
+                })
+        
+        # Print summary
+        print("\n=== Delete Summary ====")
+        print(f"Total records: {result_counts['total']}")
+        print(f"Successful: {result_counts['success']}")
+        print(f"Failed: {result_counts['failed']}")
+        print("========================\n")
+        
+        return result_counts
