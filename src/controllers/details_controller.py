@@ -175,7 +175,7 @@ class DetailsController:
             # Add your create validation/processing logic here
             print(f"Processing CREATE operations:{operations["create"]}")
             create_result = send_details.req_post(operations["create"])
-            self.insert_records(self.db, create_result)
+            self.insert_records(self.db, create_result['records'])
 
         
         # Process UPDATE operations if data exists

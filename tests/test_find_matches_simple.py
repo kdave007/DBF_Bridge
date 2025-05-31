@@ -32,9 +32,9 @@ def main():
 
     try:
         config = DBFConfig(
-            dll_path=url_dll_B,
+            dll_path=url_dll_A,
             encryption_password="X3WGTXG5QJZ6K9ZC4VO2",
-            source_directory=url_source_B,
+            source_directory=url_source_A,
             limit_rows=500  # Limit to 3 sales for testing
         )
         result = process.start(config)
