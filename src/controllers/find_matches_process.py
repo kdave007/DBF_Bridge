@@ -36,7 +36,7 @@ class MatchesProcess:
             
         
         # Print the exact format we're looking for to help debug
-        print(f"Looking for records with date exactly matching: 20/03/2025")
+        print(f"Looking for records with date exactly matching: {start_date} - {end_date}")
         
         
         #fetch dbf data

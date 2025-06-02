@@ -55,7 +55,8 @@ class SendRequest:
         results = {
             'create': {},
             'update': {},
-            'delete': {}
+            'delete': {},
+            'next_check':responses_dict.get('next_check', [])
         }
         
         # Process in batches

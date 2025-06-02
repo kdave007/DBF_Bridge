@@ -16,6 +16,7 @@ class WorkFlow:
 
         self.matches_process = MatchesProcess()
         result = self.matches_process.compare_data(config, start_date, end_date)
+        print(f' MAIN W Result {result}')
         # sample = {
         #     "matched": is_match,
         #     "dbf_hash": dbf_hash,
@@ -60,7 +61,9 @@ class WorkFlow:
                 print('Checking details actions...')
                 details_controller = DetailsController()
                 details_controller.process(requests_results, start_date, end_date)
-            
+            else:
+                pass
+                #check anyways the details
             
 
         return  result 

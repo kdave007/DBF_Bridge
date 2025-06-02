@@ -65,7 +65,8 @@ class DBFSQLComparator:
         api_operations = {
             "create": in_dbf_only,
             "update": [],
-            "delete": []
+            "delete": [],
+            "next_check":[]
         }
         
         return {
@@ -205,6 +206,7 @@ class DBFSQLComparator:
         mismatched = []  # Records to update
         in_dbf_only = []  # Records to add
         in_sql_only = []  # Records to delete
+        matching = []    # Records that don't need any changes (hash matches)
         
         # Check each DBF record
         for folio, dbf_record in dbf_records_by_folio.items():
@@ -222,6 +224,15 @@ class DBFSQLComparator:
                         "sql_record": sql_record,
                         "dbf_hash": dbf_record.get('md5_hash'),
                         "sql_hash": sql_record.get('hash')
+                    })
+                else:
+                    # Store records that match (no changes needed)
+                    matching.append({
+                        "folio": folio,
+                        "id": int(sql_records_by_folio[folio].get('id', 0)),
+                        "dbf_record": dbf_record,
+                        "sql_record": sql_record,
+                        "hash": dbf_record.get('md5_hash')  # Both hashes are the same
                     })
             else:
                 # Store complete DBF-only records for creation
@@ -246,7 +257,8 @@ class DBFSQLComparator:
         api_operations = {
             "create": in_dbf_only,
             "update": mismatched,
-            "delete": in_sql_only
+            "delete": in_sql_only,
+            "next_check": matching  # Add the matching records
         }
         
         return {
@@ -258,6 +270,7 @@ class DBFSQLComparator:
                 "create_count": len(in_dbf_only),
                 "update_count": len(mismatched),
                 "delete_count": len(in_sql_only),
+                "matching_count": len(matching),  # Add count of matching records
                 "total_actions_needed": len(in_dbf_only) + len(mismatched) + len(in_sql_only)
             }
         }

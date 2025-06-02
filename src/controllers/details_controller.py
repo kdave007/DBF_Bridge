@@ -53,8 +53,8 @@ class DetailsController:
    
     def process_results(self, results):
         combined_details = []
-        
-        for operation in ['create', 'update']:
+ 
+        for operation in ['create', 'update','next_check']:
             if operation in results and 'success' in results[operation]:
                 for record in results[operation]['success']:
                     print(f'  RECORD BEFORE COMBINED  {record}')
@@ -85,12 +85,68 @@ class DetailsController:
                             detail_with_operation['detail_hash'] = hashlib.md5(detail_str.encode()).hexdigest()
 
                             combined_details.append(detail_with_operation)
+                            
+        
+        # Fetch and append next_check records
+        next_check_records = self.fetch_next_check(results)
+        if next_check_records:
+            print(f' APPENDING {len(next_check_records)} NEXT_CHECK RECORDS')
+            combined_details.extend(next_check_records)
+        
         print(' ---   --- --- --- --- --- ---')
-        print(f' RESIDENTTTTT {results}')
+        print('  COMBINED RESULT:')
+        for i, item in enumerate(combined_details):
+            print(f'  {i+1}. {item}')
         
         return combined_details
 
-
+    def fetch_next_check(self, results):
+        print(f'NEXT_CHECK RECORDS: {results.get("next_check", [])}')
+        
+        combined = []
+        if 'next_check' in results and results['next_check']:
+            for i, record in enumerate(results['next_check']):
+                #print(f'Processing next_check record {i+1}: {record}')
+                
+                # Get the dbf_record which contains the details
+                dbf_record = record.get('dbf_record', {})
+                
+                # Extract details from dbf_record
+                if 'detalles' in dbf_record:
+                    for detail in dbf_record['detalles']:
+                        # Create a copy to avoid modifying the original
+                        detail_with_operation = detail.copy()
+                        
+                        # Convert REF to lowercase ref if it exists
+                        ref = detail.get('REF') or detail.get('ref', '')
+                        
+                        # Parse date from dbf_record
+                        fecha_str = dbf_record.get('fecha')
+                        fecha = ''
+                        if fecha_str:
+                            # Extract just the date part (before any space)
+                            fecha_parts = fecha_str.split(' ')
+                            if fecha_parts:
+                                fecha = fecha_parts[0]
+                        
+                        # Generate MD5 hash from detail content
+                        detail_str = str(sorted(detail.items()))
+                        detail_hash = hashlib.md5(detail_str.encode()).hexdigest()
+                        
+                        combined.append({
+                            'ref': ref,
+                            'folio': record.get('folio'),
+                            'parent_id': record.get('id'),
+                            'fecha': fecha,
+                            'detail_hash': detail_hash,
+                            'operation': 'next_check'  # Mark as next_check operation
+                        })
+        
+        print(f'FETCH NEXT CHECK RESULT: {len(combined)} records processed')
+        for i, item in enumerate(combined):
+            print(f'  {i+1}. {item}')
+                
+        return combined
 
     def get_sql_records(self, db_connection, start_date, end_date):
         # Create a DetailTracking instance with the database configuration
@@ -114,7 +170,6 @@ class DetailsController:
         Returns:
             Number of records successfully processed
         """
-        print(f"checkpoint______________________________")
         if not records:
             return 0
             
@@ -152,8 +207,9 @@ class DetailsController:
         
         # Process DELETE operations if data exists
         if operations["delete"]:  # Checks if list is non-empty
-            # Add your delete validation/processing logic here
-            print("Processing delete operations:", operations["delete"])
+            print(f"Processing {len(operations['delete'])} delete operations")
+            delete_result = self.delete_by_id(operations["delete"])
+            print(f"Delete operations completed: {sum(1 for r in delete_result if r.get('success', False))} successful, {sum(1 for r in delete_result if not r.get('success', False))} failed")
             
     
             
@@ -228,8 +284,6 @@ class DetailsController:
             )
 
         # Process records only in SQL (delete)
-        # for key in set(sql_counts) - set(combined_counts):
-        #     to_delete.extend(sql_items[key])
         # 1. Mostrar las claves de ambos diccionarios para comparar
         print("\n=== DEBUG: Comparando sql_counts vs combined_counts ===")
         print("Claves en sql_counts:", set(sql_counts))
@@ -239,12 +293,15 @@ class DetailsController:
         difference = set(sql_counts) - set(combined_counts)
         print("\nClaves en SQL que NO están en combined_counts (se eliminarán):", difference)
 
-        # 3. Si hay diferencia, mostrar registros afectados
+        # 3. Si hay diferencia, mostrar registros afectados y añadir a to_delete
         if difference:
             print("\nDetalle de registros a eliminar:")
             for key in difference:
                 print(f"\n- Clave '{key}' no encontrada en combined_counts.")
                 print("  Registros en SQL:", sql_items.get(key, "NO EXISTE"))
+                # Add these records to the to_delete list
+                if key in sql_items:
+                    to_delete.extend(sql_items[key])
         else:
             print("\n✅ No hay diferencias, no se eliminará nada.")
         
@@ -276,6 +333,8 @@ class DetailsController:
                             'details': combined_master,
                             'parent_id': combined_master.get('parent_id',None)
                         })
+        print(f'PARA BORRAR delete {to_delete}')
+        print(f'PARA BORRAR diff {difference}')
       
         return {
             "operations": {
@@ -680,3 +739,85 @@ class DetailsController:
         print("==========================\n")
         
         return result_counts
+
+
+    def delete_by_id(self, records):
+        """
+        Delete records from both the API and the database by their IDs
+        
+        Args:
+            records: List of records to delete, each containing at least an 'id' field
+            
+        Returns:
+            List of dictionaries with results of the delete operations
+        """
+        if not records:
+            print("No records to delete")
+            return []
+            
+        send_details = SendDetails()
+        detail_tracking = DetailTracking(self.db_config)
+        results = []
+        
+        print(f"Deleting {len(records)} records by ID")
+        for record in records:
+            # Ensure the record has an ID
+            record_id = record.get('id')
+            if not record_id:
+                print(f"Warning: Record missing ID, cannot delete: {record}")
+                results.append({
+                    'folio': record.get('folio'),
+                    'ref': record.get('ref'),
+                    'status_code': 400,
+                    'fecha': record.get('fecha'),
+                    'success': False,
+                    'error': "Missing record ID for deletion",
+                    'db_deleted': False
+                })
+                continue
+                
+            # Step 1: Call the delete_post method from SendDetails for this record
+            delete_result = send_details.delete_post([record])
+            
+            # Extract the API result for this record
+            api_success = False
+            result_record = None
+            
+            if delete_result and 'records' in delete_result and delete_result['records']:
+                result_record = delete_result['records'][0]
+                api_success = result_record.get('success', False)
+            else:
+                result_record = {
+                    'folio': record.get('folio'),
+                    'ref': record.get('ref'),
+                    'status_code': 500,
+                    'fecha': record.get('fecha'),
+                    'success': False,
+                    'id': record_id,
+                    'error': "Failed to get response from delete operation"
+                }
+            
+            # Step 2: Delete from database if API deletion was successful
+            db_deleted = False
+            if api_success:
+                try:
+                    print(f"Deleting record ID {record_id} from database")
+                    db_deleted = detail_tracking.delete_by_id(record_id)
+                    if db_deleted:
+                        print(f"Successfully deleted record ID {record_id} from database")
+                    else:
+                        print(f"Failed to delete record ID {record_id} from database")
+                except Exception as e:
+                    print(f"Error deleting record ID {record_id} from database: {e}")
+            
+            # Add database deletion result to the record
+            result_record['db_deleted'] = db_deleted
+            results.append(result_record)
+                
+        # Print summary
+        api_success_count = sum(1 for r in results if r.get('success', False))
+        db_success_count = sum(1 for r in results if r.get('db_deleted', False))
+        print(f"API deletions: {api_success_count}/{len(records)} successful")
+        print(f"Database deletions: {db_success_count}/{len(records)} successful")
+        
+        return results
