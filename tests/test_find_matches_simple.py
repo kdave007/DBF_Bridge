@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+from datetime import date
 
 # Configurar correctamente el PYTHONPATH
 project_root = Path(__file__).parent.parent
@@ -19,7 +20,10 @@ except ImportError as e:
 
 def main():
     print("=== Starting simple test for MatchesProcess ===")
-    
+     # Let's try with the exact date from your screenshot: 20/03/2025
+    start_date = date(2025, 4, 1)  # year month day
+    end_date = date(2025, 4, 1)  # year month day
+
     process = WorkFlow()
     
     print("Calling compare_batches()...")
@@ -37,7 +41,7 @@ def main():
             source_directory=url_source_B,
             limit_rows=500  # Limit to 3 sales for testing
         )
-        result = process.start(config)
+        result = process.start(config, start_date, end_date)
         if result:
             print("Test completed successfully!")
         else:

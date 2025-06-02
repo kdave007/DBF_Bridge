@@ -7,11 +7,9 @@ from .details_controller import DetailsController
 from datetime import date
 
 class WorkFlow:
-    def start(self, config):
+    def start(self, config, start_date, end_date):
 
-         # Let's try with the exact date from your screenshot: 20/03/2025
-        start_date = date(2025, 4, 29)  # March 20, 2025
-        end_date = date(2025, 4, 30)  # March 20, 2025
+        
 
 
         self.matches_process = MatchesProcess()
