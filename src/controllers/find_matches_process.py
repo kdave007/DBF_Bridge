@@ -3,6 +3,7 @@ import sys
 from turtle import st
 from pathlib import Path
 from src.config.db_config import PostgresConnection
+import hashlib
 # Add project root to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(project_root)
@@ -43,6 +44,12 @@ class MatchesProcess:
         dbf_results = self.get_dbf_data(config, start_date, end_date)
 
         print(dbf_results)
+
+        # Process DBF data through DataMap for API formatting
+        dbf_results = self.db_map_implementations(dbf_results)
+
+        print(f' after map {dbf_results}')
+        
         
         # Obtener registros SQL
         sql_records = self.get_sql_data(start_date, end_date)
@@ -57,6 +64,8 @@ class MatchesProcess:
         
         # Print summary of operations
         self.print_comparison_results(comparison_result)
+
+        
         
         
         # Return the full result for programmatic use
@@ -183,3 +192,64 @@ class MatchesProcess:
         #         print(f"\n... and {len(delete_records) - 3} more records to delete")
         
         print("\n=================================================\n")
+
+
+    def db_map_implementations(self, dbf_results):
+        from src.utils.post_data_map import DataMap
+        
+        # Initialize the DataMap class
+        data_mapper = DataMap()
+        
+        # Create a deep copy of the original structure to preserve it
+        processed_results = dbf_results.copy()
+        
+        if dbf_results and 'data' in dbf_results and dbf_results['data']:
+            for i, record in enumerate(dbf_results['data']):
+                # Check if this is a valid invoice record with the expected structure
+                if 'Cabecera' in record and record['Cabecera'] == 'FA':
+                    # Process the header (factura)
+                    header_data = {
+                        'Cabecera': record['Cabecera'],
+                        'Folio': record['Folio'],
+                        'cliente': record.get('cliente'),
+                        'empleado': record.get('empleado'),
+                        'fecha': record.get('fecha'),
+                        'total_bruto': record.get('total_bruto'),
+                        'hor': record.get('hor'),
+                        'fpg': record.get('fpg'),
+                        'md5_hash': record.get('md5_hash')
+                    }
+                    
+                    # Get mapped fields for the header
+                    header_mapped = data_mapper.process_record_fac(header_data)
+                    
+                    # Add mapped fields to the original record
+                    for key, value in header_mapped.items():
+                        processed_results['data'][i][key] = value
+                    
+                    # Process the detail records if they exist
+                    if 'detalles' in record and isinstance(record['detalles'], list):
+                        for j, detail in enumerate(record['detalles']):
+                            # Add any missing references from the header that might be needed
+                            detail_with_refs = detail.copy()
+                            
+                            # Generate hash from original detail before adding any mapped fields
+                            detail_str = str(sorted(detail.items()))
+                            detail_with_refs['detail_hash'] = hashlib.md5(detail_str.encode()).hexdigest()
+                            
+                            # Add references from header
+                            detail_with_refs['metodo_pago'] = record.get('fpg')  # Copy payment method from header
+                            detail_with_refs['hor'] = record.get('hor')
+                            detail_with_refs['emp'] = record.get('emp')
+                            detail_with_refs['emp_div'] = record.get('emp_div')
+                            detail_with_refs['ser_vta'] = record.get('ser_vta')
+                            detail_with_refs['clt'] = record.get('clt')
+                            
+                            # Get mapped fields for the detail
+                            detail_mapped = data_mapper.process_record_det(detail_with_refs)
+                            
+                            # Add mapped fields to the original detail record
+                            for key, value in detail_mapped.items():
+                                processed_results['data'][i]['detalles'][j][key] = value
+        
+        return processed_results

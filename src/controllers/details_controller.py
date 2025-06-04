@@ -71,6 +71,8 @@ class DetailsController:
                             detail_with_operation['parent_id'] = record.get('id')#pass the parent ca id to the detail
 
                             detail_with_operation['folio'] = record.get('folio')
+
+                            detail_with_operation['detail_hash'] = detail.get('detail_hash')
                             
                             # Parse date properly - extract just the date part (remove time)
                             fecha_str = record.get('fecha_emision')
@@ -80,9 +82,9 @@ class DetailsController:
                                 if fecha_parts:
                                     detail_with_operation['fecha'] = fecha_parts[0]
                             
-                            # Generate MD5 hash from detail content
-                            detail_str = str(sorted(detail.items()))
-                            detail_with_operation['detail_hash'] = hashlib.md5(detail_str.encode()).hexdigest()
+                            # # Generate MD5 hash from detail content
+                            # detail_str = str(sorted(detail.items()))
+                            # detail_with_operation['detail_hash'] = hashlib.md5(detail_str.encode()).hexdigest()
 
                             combined_details.append(detail_with_operation)
                             
@@ -97,6 +99,8 @@ class DetailsController:
         print('  COMBINED RESULT:')
         for i, item in enumerate(combined_details):
             print(f'  {i+1}. {item}')
+
+       
         
         return combined_details
 
@@ -130,15 +134,15 @@ class DetailsController:
                                 fecha = fecha_parts[0]
                         
                         # Generate MD5 hash from detail content
-                        detail_str = str(sorted(detail.items()))
-                        detail_hash = hashlib.md5(detail_str.encode()).hexdigest()
+                        # detail_str = str(sorted(detail.items()))
+                        # detail_hash = hashlib.md5(detail_str.encode()).hexdigest()
                         
                         combined.append({
                             'ref': ref,
                             'folio': record.get('folio'),
                             'parent_id': record.get('id'),
                             'fecha': fecha,
-                            'detail_hash': detail_hash,
+                            'detail_hash':detail.get('detail_hash'),
                             'operation': 'next_check'  # Mark as next_check operation
                         })
         

@@ -5,6 +5,8 @@ from .api_response_tracking import APIResponseTracking
 from .send_request import SendRequest
 from .details_controller import DetailsController
 from datetime import date
+import os
+import sys
 
 class WorkFlow:
     def start(self, config, start_date, end_date):
@@ -15,6 +17,9 @@ class WorkFlow:
         self.matches_process = MatchesProcess()
         result = self.matches_process.compare_data(config, start_date, end_date)
         print(f' MAIN W Result {result}')
+        
+
+        
         # sample = {
         #     "matched": is_match,
         #     "dbf_hash": dbf_hash,
@@ -46,6 +51,10 @@ class WorkFlow:
             # #     "total_success": sum(r.get("success", False) for r in update_results + delete_results + add_results),
             # #     "total_failed": sum(not r.get("success", False) for r in update_results + delete_results + add_results)
             # # }
+
+
+
+            
 
             send_request = SendRequest()
             requests_results = send_request.send(result['api_operations'])

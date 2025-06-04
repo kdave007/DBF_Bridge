@@ -4,6 +4,8 @@ from datetime import datetime, date
 from typing import List, Dict, Optional
 import logging
 import pytz
+import os
+import sys
 
 
 class SendDetails:
@@ -51,15 +53,21 @@ class SendDetails:
                 # Map the record fields to the expected payload structure
                 single_payload = {
                     "id": str(record.get('sql_id')),
-                    "emp": "1",
-                    "emp_div": "1",
-                    "can": record['details'].get('cantidad'),
-                    "pre": record['details'].get('precio'),
-                    "fch": record['details'].get('fecha'),
-                    "art": record.get('ref'),
+                    "emp": str(record.get('emp')),
+                    "emp_div": str(record.get('emp_div')),
+                    "can_und": record.get('cantidad'),
+                    "por_dto": record.get('descuento'),
+                    "pre": record.get('precio'),
+                    "fch": record.get('fecha'),
+                    "art": record.get('art'),
                     "vta_fac": record.get('parent_id'),
                     "vta_fac_num_lin": i+1,
-                    "und_med":1
+                    "und_med":1,
+                    "hor":self._format_hour_to_12h(record.get('hor')),
+                    "reg_iva_vta":record.get('reg_iva_vta'),
+                    "mov_tip":record.get('mov_tip'),
+                    "ser_vta":str(record.get('ser_vta')),
+                    "alm":str(record.get('alm'))
                 }
                 
                 # Convert payload to JSON
@@ -172,19 +180,26 @@ class SendDetails:
         
         # Process each record individually
         for i, record in enumerate(records):
+            print(f' record detail to post is {record}')
             try:
                 # Prepare the payload for posting based on the record data
                 # Map the record fields to the expected payload structure
                 single_payload = {
-                    "emp": "1",
-                    "emp_div": "1",
-                    "can": record.get('cantidad'),
+                    "emp": str(record.get('emp_div')),
+                    "emp_div": str(record.get('emp_div')),
+                    "can_und": record.get('cantidad'),
+                    "por_dto": record.get('descuento'),
                     "pre": record.get('precio'),
                     "fch": record.get('fecha'),
-                    "art": record.get('ref'),
-                    "vta_fac": record.get('id'),
+                    "art": record.get('art'),
+                    "vta_fac": record.get('parent_id'),
                     "vta_fac_num_lin": i+1,
-                    "und_med":1
+                    "und_med":1,
+                    "hor":self._format_hour_to_12h(record.get('hor')),
+                    "reg_iva_vta":record.get('reg_iva_vta'),
+                    "mov_tip":record.get('mov_tip'),
+                    "ser_vta":str(record.get('ser_vta')),
+                    "alm":str(record.get('alm'))
                 }
                 
                 # Convert payload to JSON
@@ -195,6 +210,8 @@ class SendDetails:
                 print(f"URL: {post_url}")
                 print(f"Payload: {post_data}")
                 
+
+               
                 # Send the POST request
                 response = requests.post(post_url, data=post_data, headers=headers)
                 
@@ -223,6 +240,7 @@ class SendDetails:
                             record_id = response_json['mov_g'][0].get('id')
                             if record_id:
                                 record_result['detail_id'] = record_id
+                                record_result['parent_id'] = record.get('parent_id')
                                 print(f"Extracted detail ID: {record_id}")
                         
                         record_result['success'] = True
@@ -384,3 +402,93 @@ class SendDetails:
         print("========================\n")
         
         return result_counts
+
+    def _format_hour_to_12h(self, hour_value):
+        """
+        Format hour value with minutes and seconds
+        
+        Args:
+            hour_value: Integer representing hour in 24-hour format (0-23)
+            
+        Returns:
+            String in format "hh:00:00"
+        """
+        if hour_value is None:
+            return ""
+            
+        try:
+            # Convert to integer if it's a string
+            if isinstance(hour_value, str):
+                hour_value = int(hour_value)
+                
+            # Format hour with minutes and seconds
+            return f"{hour_value:02d}:00:00"
+        except Exception as e:
+            print(f"Error formatting hour: {e}")
+            return f"{hour_value}:00:00"  # Return original if parsing fails
+
+
+    def send_ca_off(self, id):
+        """
+        Send a request to set the 'off' field to 0 for a specific record
+        
+        Args:
+            id: The ID of the record to update
+            
+        Returns:
+            dict: Result of the operation with success status and response details
+        """
+        import requests
+        import json
+        
+        try:
+            # API configuration
+            base_url = "https://c8.velneo.com:17262/api/vLatamERP_db_dat/v2/vta_fac_g"
+            api_key = "123456"
+            headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "x-process-json": "true"
+            }
+
+            # Prepare payload
+            post_data = json.dumps({
+                "off": 0
+            })
+            
+            # Construct URL with the ID
+            post_url = f"{base_url}/{id}?api_key={api_key}"
+            
+            print(f"Sending off=0 update for ID: {id}")
+            print(f"URL: {post_url}")
+            print(f"Payload: {post_data}")
+            
+            # Send the POST request
+            response = requests.post(post_url, data=post_data, headers=headers)
+            
+            # Process response
+            if response.status_code in [200, 201, 202, 204]:
+                print(f"Successfully updated off field for ID {id}")
+                return {
+                    "success": True,
+                    "id": id,
+                    "status_code": response.status_code,
+                    "response": response.text
+                }
+            else:
+                print(f"Failed to update off field for ID {id}. Status: {response.status_code}")
+                return {
+                    "success": False,
+                    "id": id,
+                    "status_code": response.status_code,
+                    "error": response.text
+                }
+                
+        except Exception as e:
+            error_message = f"Exception updating off field for ID {id}: {str(e)}"
+            print(error_message)
+            return {
+                "success": False,
+                "id": id,
+                "error": error_message
+            }

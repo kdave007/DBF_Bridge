@@ -164,6 +164,24 @@ class DataMap:
         except Exception as e:
             logging.error(f"Error mapping articulo with ref {ref}: {e}")
             return None
+
+    def apply_map_tipo_iva(self, ref: str) -> Optional[int]:
+        """Get the Velneo ID for iva from the database
+        
+        Args:
+            ref: The reference code from the DBF record
+            
+        Returns:
+            int: The mapped Velneo ID or None if not found
+        """
+        if not ref:
+            return None
+            
+        try:
+            return self.velneo_mappings.get_tipo_iva(ref)
+        except Exception as e:
+            logging.error(f"Error mapping articulo with ref {ref}: {e}")
+            return None
     
     def process_record_fac(self, record: Dict[str, Any]) -> Dict[str, Any]:
         """Process a complete record by applying all relevant mappings
@@ -175,20 +193,24 @@ class DataMap:
             Dict[str, Any]: The processed record with mapped values
         """
         result = record.copy()
-        
+        # print(f' MAP FAC BEFORE {record}')
         # Apply mappings based on available fields in the record
 
         result['ser'] = self.apply_map_serie()
             
         result['clt'] = self.apply_map_cliente()
             
-        result['fpg'] = self.apply_map_metodo_pago(record['metodo_pago'])
+        result['fpg'] = self.apply_map_metodo_pago(record['fpg'])
             
-        result['cmr'] = self.apply_map_vendedor(record['vendedor'])
+        result['cmr'] = self.apply_map_vendedor(1)
             
-        result['pai'] = self.apply_map_pais(record['pais'])
+        result['pai'] = self.apply_map_pais('México')
 
         result['emp_div'] = self.apply_map_emp(1)
+
+        result['emp'] = self.apply_map_emp(1)
+
+        # print(f' MAP FAC AFTER {result}')
       
         return result
 
@@ -202,6 +224,7 @@ class DataMap:
             Dict[str, Any]: The processed record with mapped values
         """
         result = record.copy()
+        # print(f' MAP DETAIL BEFORE {record}')
         
         # Apply mappings based on available fields in the record
         result['alm'] = self.apply_map_alm()
@@ -210,13 +233,17 @@ class DataMap:
 
         result['emp'] = self.apply_map_emp(1)
 
-        result['art'] = self.apply_map_articulo(record['articulo_ref'])
+        result['art'] = self.apply_map_articulo(record['REF'])
      
-        result['fpg'] = self.apply_map_metodo_pago(record['metodo_pago'])
             
         result['ser_vta'] = self.apply_map_serie()
      
-        result['mov_tip'] = self.apply_map_tipo_mov(record['tipo_mov'])
+        #result['mov_tip'] = self.apply_map_tipo_mov(record['tipo_mov'])
+        result['mov_tip'] = 'V'
+
+        result['reg_iva_vta'] = self.apply_map_tipo_iva(record['iva_vta'])
+
+        # print(f' MAP DETAIL AFTER {result}')
    
         return result
 

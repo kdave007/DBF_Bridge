@@ -90,6 +90,16 @@
                     "dbf": "TOTAL_BRUT",
                     "velneo_table": "total_bruto" ,
                     "type": "number"
+            },
+            "HORA":{
+                    "dbf": "HORA",
+                    "velneo_table": "hor" ,
+                    "type": "number"
+            },
+            "CCON_CXC":{
+                    "dbf": "CCON_CXC",
+                    "velneo_table": "fpg" ,
+                    "type": "string"
             }
         }
     },
@@ -124,6 +134,11 @@
                     "dbf": "DESCUENTO",
                     "velneo_table": "descuento" ,
                     "type": "number"
+            },
+            "NO_IMPUES1":{
+                    "dbf": "NO_IMPUES1",
+                    "velneo_table": "iva_vta" ,
+                    "type": "string"
             }
         }
     }

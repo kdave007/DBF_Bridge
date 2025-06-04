@@ -1,3 +1,4 @@
+from ast import Try
 import os
 import sys
 from turtle import st
@@ -99,23 +100,42 @@ class SendRequest:
                 current_folio = None
 
                 # Process each item in the batch individually
+                print(f"CHECKPOINT AA ")
                 for item in batch:
                     folio = item.get('folio')
                     folio_to_item[folio] = item
                     dbf_record = item.get('dbf_record', {})
+
+                    print(f"CHECKPOINT BB ")
+                    try:
+                        # Prepare payload for a single record
+                        single_payload = {
+                            "emp":str(dbf_record.get('emp')),
+                            "emp_div": str(dbf_record.get('emp_div')),
+                            "num_fac": f'VTA/-"{folio}',
+                            "num_doc":folio,
+                            "clt": dbf_record.get('clt'),
+                            "fpg": dbf_record.get('fpg'),
+                            "cmr": dbf_record.get('cmr'),
+                            "fch": self._format_date_to_iso(dbf_record.get("fecha")),
+                            "tot_fac": dbf_record.get("total_bruto"),
+                            "ser":dbf_record.get('ser'),
+                            "hor":self._format_hour_to_12h(dbf_record.get('hor')),
+                            "pai":dbf_record.get('pai'),
+                            "ent_rel_tip":1,
+                            "mon_c":1,
+                            "cot":1,
+                            "fch_vto":self._format_date_to_iso(dbf_record.get("fecha")),
+                            "pre_con_iva_inc":1,
+                            "trm":1,
+                            "dum":1,
+                            "off":1
+                        }
+                    except Exception as e:
+                        print(f'{e}')
                     
-                    # Prepare payload for a single record
-                    single_payload = {
-                        "emp":"1",
-                        "emp_div": "1",
-                        "num_fac": f'VTA/-"{folio}',
-                        "num_doc":folio,
-                        "clt": 1,
-                        "fpg": 1,
-                        "cmr": 1,
-                        "fch": self._format_date_to_iso(dbf_record.get("fecha")),
-                        "tot_fac": dbf_record.get("total_bruto")
-                    }
+
+                    print(f"CHECKPOINT CC ")
                     
                     # Send the single record
                     print(f"Sending record for folio {folio}")
@@ -244,15 +264,26 @@ class SendRequest:
                     # Prepare payload for a single record
                     single_payload = {
                         "id":item.get("id"),
-                        "emp":"1",
-                        "emp_div": "1",
+                        "emp":str(dbf_record.get('emp')),
+                        "emp_div": str(dbf_record.get('emp_div')),
                         "num_fac": f'VTA/-"{folio}',
                         "num_doc":folio,
-                        "clt": 1,
-                        "fpg": 1,
-                        "cmr": 1,
+                        "clt": dbf_record.get('clt'),
+                        "fpg": dbf_record.get('fpg'),
+                        "cmr": dbf_record.get('cmr'),
                         "fch": self._format_date_to_iso(dbf_record.get("fecha")),
-                        "tot_fac": dbf_record.get("total_bruto")
+                        "tot_fac": dbf_record.get("total_bruto"),
+                        "ser":dbf_record.get('ser'),
+                        "hor":self._format_hour_to_12h(dbf_record.get('hor')),
+                        "pai":dbf_record.get('pai'),
+                        "ent_rel_tip":1,
+                        "mon_c":1,
+                        "cot":1,
+                        "fch_vto":record.get('fecha'),
+                        "pre_con_iva_inc":1,
+                        "trm":1,
+                        "dum":1,
+                        "off":1
                     }
                     
                     # Send the single record
@@ -533,3 +564,30 @@ class SendRequest:
         except Exception as e:
             print(f"Error formatting date {date_str}: {e}")
             return date_str  # Return original if parsing fails
+            
+    def _format_hour_to_12h(self, hour_value):
+        """
+        Format hour value with minutes and seconds
+        
+        Args:
+            hour_value: Integer representing hour in 24-hour format (0-23)
+            
+        Returns:
+            String in format "hh:00:00"
+        """
+        if hour_value is None:
+            return ""
+            
+        try:
+            # Convert to integer if it's a string
+            if isinstance(hour_value, str):
+                hour_value = int(hour_value)
+                
+            # Format hour with minutes and seconds
+            return f"{hour_value:02d}:00:00"
+        except Exception as e:
+            print(f"Error formatting hour: {e}")
+            return f"{hour_value}:00:00"  # Return original if parsing fails
+            
+    def update_lote_hash(self):
+        pass  # Return original if parsing fails

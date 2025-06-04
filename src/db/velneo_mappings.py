@@ -173,19 +173,22 @@ class VelneoMappings:
             conn = psycopg2.connect(**self.config)
             cursor = conn.cursor()
             
+            # Convert reference to string to match the character varying column
+            str_reference = str(reference) if reference is not None else None
+            
             query = """
             SELECT velneo FROM vendedores 
-            WHERE pvsi = %s
+            WHERE pvsi_clave = %s
             LIMIT 1
             """
             
-            cursor.execute(query, (reference,))
+            cursor.execute(query, (str_reference,))
             result = cursor.fetchone()
             
             return result[0] if result else None
         
         except Exception as e:
-            logging.error(f"Error retrieving payment method Velneo ID: {e}")
+            logging.error(f"Error retrieving vendedor Velneo ID: {e}")
             return None
         finally:
             if cursor:
@@ -199,7 +202,7 @@ class VelneoMappings:
             cursor = conn.cursor()
             
             query = """
-            SELECT velneo FROM pais 
+            SELECT id FROM pais 
             WHERE description = %s
             LIMIT 1
             """
@@ -267,5 +270,32 @@ class VelneoMappings:
                 cursor.close()
             if conn:
                 conn.close()
+
+    
+    def get_tipo_iva(self, reference):
+        try:
+            conn = psycopg2.connect(**self.config)
+            cursor = conn.cursor()
+            
+            query = """
+            SELECT velneo FROM iva 
+            WHERE pvsi = %s
+            LIMIT 1
+            """
+            
+            cursor.execute(query, (reference,))
+            result = cursor.fetchone()
+            
+            return result[0] if result else None
+        
+        except Exception as e:
+            logging.error(f"Error retrieving payment method Velneo ID: {e}")
+            return None
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
 
     
