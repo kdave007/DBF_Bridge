@@ -83,3 +83,6 @@ test.py
 .windsurf/
 output/
 Advantage.Data.Provider.dll
+
+art_m.py
+art_m.json
