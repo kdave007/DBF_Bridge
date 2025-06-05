@@ -120,6 +120,8 @@ class SendDetails:
                     print(f"Failed with status {status_code}: {response.text}")
                     record_result['error'] = response.text
                     result_counts['failed'] += 1
+
+                self.send_update_fac_off(record_id) #HARDCODED HERE, MAY NEED TO MOVE OUT THIS METHOD --------------------------------------------------------------       
                 
                 # Add the record result to the tracking
                 result_counts['records'].append(record_result)
@@ -254,6 +256,8 @@ class SendDetails:
                     print(f"Failed with status {status_code}: {response.text}")
                     record_result['error'] = response.text
                     result_counts['failed'] += 1
+
+                self.send_update_fac_off(record_id) #HARDCODED HERE, MAY NEED TO MOVE OUT THIS METHOD --------------------------------------------------------------                    
                 
                 # Add the record result to the tracking
                 result_counts['records'].append(record_result)
@@ -428,7 +432,7 @@ class SendDetails:
             return f"{hour_value}:00:00"  # Return original if parsing fails
 
 
-    def send_ca_off(self, id):
+    def send_update_fac_off(self, id):
         """
         Send a request to set the 'off' field to 0 for a specific record
         
