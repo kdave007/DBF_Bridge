@@ -214,7 +214,7 @@ class DBFSQLComparator:
                 sql_record = sql_records_by_folio[folio]
                 
                 # Compare hashes - if different, it needs to be updated
-                #print(f'////////----------- { dbf_record}  vs  {sql_record}')
+                print(f'////////-----------DBF { dbf_record.get('md5_hash')}  vs  SQL {sql_record.get('hash')}')
                 if dbf_record.get('md5_hash') != sql_record.get('hash'):
                     # Store mismatched records for update
                     mismatched.append({

@@ -47,9 +47,6 @@ class MatchesProcess:
 
         # Process DBF data through DataMap for API formatting
         dbf_results = self.db_map_implementations(dbf_results)
-
-        print(f' after map {dbf_results}')
-        
         
         # Obtener registros SQL
         sql_records = self.get_sql_data(start_date, end_date)

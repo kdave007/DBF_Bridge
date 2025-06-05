@@ -62,18 +62,21 @@ class SendRequest:
         
         # Process in batches
         if creates:
+            print(f' CREATE PROCESS >>')
             result_create = self.create(creates)
             results['create'] = result_create
             # print("Creates:")
             # print(json.dumps(result_create, indent=4, cls=self.json_encoder))
 
-        if updates:    
+        if updates:  
+            print(f' UPDATE PROCESS >>')  
             result_update = self.update(updates)
             results['update'] = result_update
             # print("Updates:")
             # print(json.dumps(result_update, indent=4, cls=self.json_encoder))
 
         if deletes:
+            print(f' DELETE PROCESS >>')
             result_delete = self.delete(deletes)
             results['delete'] = result_delete
             # print("Deletes:")
@@ -87,10 +90,10 @@ class SendRequest:
             'failed': []   # Will store folio -> result for failed operations
         }
         
-        print(f"Processing {len(creates)} create operations in batches of {self.batch_size}")
+        print(f"Processing {len(creates)} CREATE operations in batches of {self.batch_size}")
         for i in range(0, len(creates), self.batch_size):
             batch = creates[i:i+self.batch_size]
-            print(f"Processing create batch {i//self.batch_size + 1} with {len(batch)} operations")
+            print(f"Processing CREATE batch {i//self.batch_size + 1} with {len(batch)} operations")
             
             try:
                 # Prepare batch payload
@@ -220,7 +223,7 @@ class SendRequest:
                         
             except Exception as e:
                 error_message = f"Exception during batch create: {str(e)}"
-              
+                print(error_message)
                 # Mark all records in the batch as failed
                 for item in batch_payload:
                         original_item = folio_to_item.get(folio)
@@ -243,10 +246,10 @@ class SendRequest:
             'failed': []   # Will store folio -> result for failed operations
         }
         
-        print(f"Processing {len(update)} create operations in batches of {self.batch_size}")
+        print(f"Processing {len(update)} UPDATE operations in batches of {self.batch_size}")
         for i in range(0, len(update), self.batch_size):
             batch = update[i:i+self.batch_size]
-            print(f"Processing create batch {i//self.batch_size + 1} with {len(batch)} operations")
+            print(f"Processing UPDATE batch {i//self.batch_size + 1} with {len(batch)} operations")
             
             try:
                 # Prepare batch payload
@@ -279,7 +282,7 @@ class SendRequest:
                         "ent_rel_tip":1,
                         "mon_c":1,
                         "cot":1,
-                        "fch_vto":record.get('fecha'),
+                        "fch_vto":self._format_date_to_iso(dbf_record.get("fecha")),
                         "pre_con_iva_inc":1,
                         "trm":1,
                         "dum":1,
@@ -369,6 +372,7 @@ class SendRequest:
                         
             except Exception as e:
                 error_message = f"Exception during batch create: {str(e)}"
+                print(error_message)
               
                 # Mark all records in the batch as failed
                 for item in batch_payload:
@@ -393,10 +397,10 @@ class SendRequest:
             'failed': []   # Will store folio -> result for failed operations
         }
         
-        print(f"Processing {len(deletes)} delete operations in batches of {self.batch_size}")
+        print(f"Processing {len(deletes)} DELETE operations in batches of {self.batch_size}")
         for i in range(0, len(deletes), self.batch_size):
             batch = deletes[i:i+self.batch_size]
-            print(f"Processing delete batch {i//self.batch_size + 1} with {len(batch)} operations")
+            print(f"Processing DELETE batch {i//self.batch_size + 1} with {len(batch)} operations")
             
             try:
                 # Prepare batch payload
