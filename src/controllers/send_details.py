@@ -53,7 +53,7 @@ class SendDetails:
                 # Map the record fields to the expected payload structure
                 single_payload = {
                     "id": str(record.get('sql_id')),
-                    "emp": str(record.get('emp')),
+                     # "emp": str(record.get('emp')),
                     "emp_div": str(record.get('emp_div')),
                     "can_und": record.get('cantidad'),
                     "por_dto": record.get('descuento'),
@@ -108,6 +108,9 @@ class SendDetails:
                             if record_id:
                                 record_result['detail_id'] = record_id
                                 print(f"Extracted detail update ID: {record_id}")
+
+                        
+                        self.send_update_fac_off(record_id)            
                         
                         record_result['success'] = True
                         result_counts['success'] += 1
@@ -121,8 +124,7 @@ class SendDetails:
                     record_result['error'] = response.text
                     result_counts['failed'] += 1
 
-                self.send_update_fac_off(record_id) #HARDCODED HERE, MAY NEED TO MOVE OUT THIS METHOD --------------------------------------------------------------       
-                
+              
                 # Add the record result to the tracking
                 result_counts['records'].append(record_result)
                 
@@ -143,6 +145,8 @@ class SendDetails:
         print(f"Successful: {result_counts['success']}")
         print(f"Failed: {result_counts['failed']}")
         print("========================\n")
+
+        
         
         return result_counts
 
@@ -187,7 +191,7 @@ class SendDetails:
                 # Prepare the payload for posting based on the record data
                 # Map the record fields to the expected payload structure
                 single_payload = {
-                    "emp": str(record.get('emp_div')),
+                    # "emp": str(record.get('emp')),
                     "emp_div": str(record.get('emp_div')),
                     "can_und": record.get('cantidad'),
                     "por_dto": record.get('descuento'),
@@ -244,6 +248,8 @@ class SendDetails:
                                 record_result['detail_id'] = record_id
                                 record_result['parent_id'] = record.get('parent_id')
                                 print(f"Extracted detail ID: {record_id}")
+
+                        self.send_update_fac_off(record_id)   
                         
                         record_result['success'] = True
                         result_counts['success'] += 1
@@ -257,7 +263,7 @@ class SendDetails:
                     record_result['error'] = response.text
                     result_counts['failed'] += 1
 
-                self.send_update_fac_off(record_id) #HARDCODED HERE, MAY NEED TO MOVE OUT THIS METHOD --------------------------------------------------------------                    
+                                   
                 
                 # Add the record result to the tracking
                 result_counts['records'].append(record_result)
@@ -279,6 +285,9 @@ class SendDetails:
         print(f"Successful: {result_counts['success']}")
         print(f"Failed: {result_counts['failed']}")
         print("========================\n")
+
+
+        
         
         return result_counts
 

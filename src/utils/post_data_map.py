@@ -113,7 +113,7 @@ class DataMap:
             logging.error(f"Error mapping almacen: {e}")
             return None
 
-    def apply_map_emp(self, ref: str) -> Optional[int]:
+    def apply_map_emp(self) -> Optional[int]:
         """Get the Velneo ID for empresa from the database
         
         Args:
@@ -127,6 +127,22 @@ class DataMap:
             return self.velneo_mappings.get_from_general_emp()
         except Exception as e:
             logging.error(f"Error mapping empresa: {e}")
+            return None
+
+    def apply_map_div(self) -> Optional[int]:
+        """Get the Velneo ID for division from the database
+        
+        Args:
+            ref: The reference code from the DBF record (not used in current implementation)
+            
+        Returns:
+            int: The mapped Velneo ID or None if not found
+        """
+        try:
+            # Note: ref parameter is kept for consistency but not used in the current implementation
+            return self.velneo_mappings.get_from_general_div()
+        except Exception as e:
+            logging.error(f"Error mapping division: {e}")
             return None
     
     def apply_map_tipo_mov(self, ref: str) -> Optional[int]:
@@ -206,9 +222,9 @@ class DataMap:
             
         result['pai'] = self.apply_map_pais('México')
 
-        result['emp_div'] = self.apply_map_emp(1)
+        result['emp_div'] = self.apply_map_div()
 
-        result['emp'] = self.apply_map_emp(1)
+        result['emp'] = self.apply_map_emp()
 
         # print(f' MAP FAC AFTER {result}')
       
@@ -229,9 +245,9 @@ class DataMap:
         # Apply mappings based on available fields in the record
         result['alm'] = self.apply_map_alm()
 
-        result['emp_div'] = self.apply_map_emp(1)
+        result['emp_div'] = self.apply_map_div()
 
-        result['emp'] = self.apply_map_emp(1)
+        result['emp'] = self.apply_map_emp()
 
         result['art'] = self.apply_map_articulo(record['REF'])
      

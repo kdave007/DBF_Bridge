@@ -21,8 +21,8 @@ except ImportError as e:
 def main():
     print("=== Starting simple test for MatchesProcess ===")
      # Let's try with the exact date from your screenshot: 20/03/2025
-    start_date = date(2025, 4, 1)  # year month day
-    end_date = date(2025, 4, 1)  # year month day
+    start_date = date(2025, 6, 3)  # year month day
+    end_date = date(2025, 6, 3)  # year month day
 
     process = WorkFlow()
     
@@ -32,7 +32,9 @@ def main():
     url_dll_A = r"C:\Users\gtdri\Documents\projects\care\DBF_Bridge\Advantage.Data.Provider.dll"
 
     url_dll_B=r"C:\Users\campo\Documents\projects\DBF_Bridge\Advantage.Data.Provider.dll"
-    url_source_B=r"C:\Users\campo\Documents\projects\DBF_Bridge\pospcp"
+    # url_source_B=r"C:\Users\campo\Documents\projects\DBF_Bridge\pospcp"
+
+    url_source_B=r"C:\Users\campo\Documents\prueba_dbf"
 
     try:
         config = DBFConfig(

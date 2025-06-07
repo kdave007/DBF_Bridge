@@ -134,6 +134,38 @@ class VelneoMappings:
                 cursor.close()
             if conn:
                 conn.close()
+    
+    def get_from_general_div(self):
+        """Get the Velneo ID for an division (company) from general_misc table
+        
+        Args:
+            reference: The reference to look for (id_psi)
+            
+        Returns:
+            int: The Velneo ID (id_velneo) if found, None otherwise
+        """
+        try:
+            conn = psycopg2.connect(**self.config)
+            cursor = conn.cursor()
+            
+            query = """
+            SELECT id_velneo FROM general_misc 
+            WHERE title = 'division'
+            """
+            
+            cursor.execute(query)
+            result = cursor.fetchone()
+            
+            return result[0] if result else None
+            
+        except Exception as e:
+            logging.error(f"Error retrieving empresa Velneo ID: {e}")
+            return None
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
 
     def get_metodo_pago(self, reference):
         """Get the Velneo ID for a payment method from metodo_pago table
