@@ -109,9 +109,8 @@ class SendDetails:
                                 record_result['detail_id'] = record_id
                                 print(f"Extracted detail update ID: {record_id}")
 
-                        
-                        self.send_update_fac_off(record_id)            
-                        
+                                self.send_update_fac_off(record.get('parent_id'), self._format_date_to_iso(record.get("fecha"))) 
+
                         record_result['success'] = True
                         result_counts['success'] += 1
                     except ValueError:
@@ -191,21 +190,22 @@ class SendDetails:
                 # Prepare the payload for posting based on the record data
                 # Map the record fields to the expected payload structure
                 single_payload = {
-                    # "emp": str(record.get('emp')),
-                    "emp_div": str(record.get('emp_div')),
-                    "can_und": record.get('cantidad'),
-                    "por_dto": record.get('descuento'),
-                    "pre": record.get('precio'),
-                    "fch": record.get('fecha'),
+                    "alm":str(record.get('alm')),
                     "art": record.get('art'),
-                    "vta_fac": record.get('parent_id'),
-                    "vta_fac_num_lin": i+1,
                     "und_med":1,
+                    "can_und": record.get('cantidad'),
+                    "can":record.get('cantidad'),
+                    "emp_div": str(record.get('emp_div')),
+                    "emp": str(record.get('emp')),
+                    "fch": self._format_date_to_iso(record.get("fecha")),
                     "hor":self._format_hour_to_12h(record.get('hor')),
+                    "pre": record.get('precio'),
+                    "por_dto": record.get('descuento'),
                     "reg_iva_vta":record.get('reg_iva_vta'),
+                    "vta_fac": record.get('parent_id'),
+                    "clt":record.get('clt'),
                     "mov_tip":record.get('mov_tip'),
-                    "ser_vta":str(record.get('ser_vta')),
-                    "alm":str(record.get('alm'))
+                    "cal_arr":1
                 }
                 
                 # Convert payload to JSON
@@ -249,7 +249,8 @@ class SendDetails:
                                 record_result['parent_id'] = record.get('parent_id')
                                 print(f"Extracted detail ID: {record_id}")
 
-                        self.send_update_fac_off(record_id)   
+                                self.send_update_fac_off(record.get('parent_id'), self._format_date_to_iso(record.get("fecha"))) 
+
                         
                         record_result['success'] = True
                         result_counts['success'] += 1
@@ -441,7 +442,7 @@ class SendDetails:
             return f"{hour_value}:00:00"  # Return original if parsing fails
 
 
-    def send_update_fac_off(self, id):
+    def send_update_fac_off(self, id, date):
         """
         Send a request to set the 'off' field to 0 for a specific record
         
@@ -466,7 +467,8 @@ class SendDetails:
 
             # Prepare payload
             post_data = json.dumps({
-                "off": 0
+                "off": 0,
+                "fch":date
             })
             
             # Construct URL with the ID
@@ -505,3 +507,57 @@ class SendDetails:
                 "id": id,
                 "error": error_message
             }
+
+    def _format_date_to_iso(self, date_str):
+        """
+        Convert date from format like "30/04/2025 12:00:00 a. m." to "2025-04-30"
+        
+        Args:
+            date_str: Date string in DD/MM/YYYY format with possible time component
+            
+        Returns:
+            Date string in YYYY-MM-DD format
+        """
+        if not date_str:
+            return ""
+            
+        try:
+            # Split by space to separate date and time
+            parts = date_str.split(' ')
+            date_part = parts[0]
+            
+            # Split the date part by /
+            day, month, year = date_part.split('/')
+            
+            # Format to YYYY-MM-DD
+            return f"{year}-{month.zfill(2)}-{day.zfill(2)}"
+        except Exception as e:
+            print(f"Error formatting date {date_str}: {e}")
+            return date_str  # Return original if parsing fails
+            
+    def _format_hour_to_12h(self, hour_value):
+        """
+        Format hour value with minutes and seconds
+        
+        Args:
+            hour_value: Integer representing hour in 24-hour format (0-23)
+            
+        Returns:
+            String in format "hh:00:00"
+        """
+        if hour_value is None:
+            return ""
+            
+        try:
+            # Convert to integer if it's a string
+            if isinstance(hour_value, str):
+                hour_value = int(hour_value)
+                
+            # Format hour with minutes and seconds
+            return f"{hour_value:02d}:00:00"
+        except Exception as e:
+            print(f"Error formatting hour: {e}")
+            return f"{hour_value}:00:00"  # Return original if parsing fails
+            
+    def update_lote_hash(self):
+        pass  # Return original if parsing fails

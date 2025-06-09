@@ -226,6 +226,8 @@ class DataMap:
 
         result['emp'] = self.apply_map_emp()
 
+        result['alm'] = self.apply_map_alm()
+
         # print(f' MAP FAC AFTER {result}')
       
         return result
@@ -258,6 +260,8 @@ class DataMap:
         result['mov_tip'] = 'V'
 
         result['reg_iva_vta'] = self.apply_map_tipo_iva(record['iva_vta'])
+
+        result['clt'] = self.apply_map_cliente()
 
         # print(f' MAP DETAIL AFTER {result}')
    

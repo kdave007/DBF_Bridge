@@ -52,10 +52,6 @@ class WorkFlow:
             # #     "total_failed": sum(not r.get("success", False) for r in update_results + delete_results + add_results)
             # # }
 
-
-
-            
-
             send_request = SendRequest()
             requests_results = send_request.send(result['api_operations'])
 
