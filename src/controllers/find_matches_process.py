@@ -45,8 +45,12 @@ class MatchesProcess:
 
         print(dbf_results)
 
+        
+        
+
+
         # Process DBF data through DataMap for API formatting
-        dbf_results = self.db_map_implementations(dbf_results)
+        #dbf_results = self.db_map_implementations(dbf_results) ----- update the mapping HERE TODO 
         
         # Obtener registros SQL
         sql_records = self.get_sql_data(start_date, end_date)
@@ -60,7 +64,12 @@ class MatchesProcess:
             comparison_result = self.comparator.compare_records_by_hash(dbf_records=dbf_results, sql_records=sql_records, start_date=start_date, end_date=end_date)
         
         # Print summary of operations
+
+
+
         self.print_comparison_results(comparison_result)
+
+        
 
         
         

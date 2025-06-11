@@ -6,7 +6,7 @@ import logging
 import pytz
 
 class PostgresTracking:
-    """Sistema de seguimiento para estado_factura_venta"""
+    """Sistema de seguimiento para estado_factura_compra"""
     
     def __init__(self, db_config: dict):
         self.config = db_config
@@ -26,7 +26,7 @@ class PostgresTracking:
                     base_query = sql.SQL("""
                         SELECT id, folio, total_partidas, descripcion, 
                                hash, fecha_procesamiento, id_lote, estado, fecha_emision, accion
-                        FROM estado_factura_venta
+                        FROM estado_factura_compra
                     """)
                     
                     if id_lote:
@@ -63,7 +63,7 @@ class PostgresTracking:
                 with conn.cursor() as cursor:
                     # Solo insert si no existe
                     query = sql.SQL("""
-                        INSERT INTO estado_factura_venta (
+                        INSERT INTO estado_factura_compra (
                             folio, total_partidas, descripcion,
                             hash, fecha_procesamiento, id_lote, estado, fecha_emision
                         ) VALUES (%s, %s, %s, %s, %s::date, %s, %s, %s)
@@ -100,7 +100,7 @@ class PostgresTracking:
                 with conn.cursor() as cursor:
                     if new_hash:
                         query = sql.SQL("""
-                            UPDATE estado_factura_venta
+                            UPDATE estado_factura_compra
                             SET estado = %s,
                                 hash = %s,
                                 fecha_procesamiento = %s
@@ -109,7 +109,7 @@ class PostgresTracking:
                         cursor.execute(query, (new_status, new_hash, datetime.now(pytz.utc), folio))
                     else:
                         query = sql.SQL("""
-                            UPDATE estado_factura_venta
+                            UPDATE estado_factura_compra
                             SET estado = %s,
                                 fecha_procesamiento = %s
                             WHERE folio = %s
@@ -146,7 +146,7 @@ class PostgresTracking:
                     query = """
                         SELECT id, folio, total_partidas,
                                hash, fecha_procesamiento,estado, fecha_emision
-                        FROM estado_factura_venta
+                        FROM estado_factura_compra
                         WHERE fecha_emision BETWEEN %s AND %s
                         ORDER BY fecha_emision
                     """
@@ -234,7 +234,7 @@ class PostgresTracking:
         """
         Inserta en una sola transacción:
         1. Registro en tabla lote_diario
-        2. Todos los registros en estado_factura_venta
+        2. Todos los registros en estado_factura_compra
         
         Args:
             batch_data: Lista de diccionarios con datos de facturas
@@ -276,7 +276,7 @@ class PostgresTracking:
                     
                     # 2. Insertar todas las facturas
                     factura_query = """
-                        INSERT INTO estado_factura_venta (
+                        INSERT INTO estado_factura_compra (
                             folio, total_partidas, descripcion,
                             hash, fecha_procesamiento, id_lote, estado, fecha_emision
                         ) VALUES (%s, %s, %s, %s, %s::date, %s, %s, %s)

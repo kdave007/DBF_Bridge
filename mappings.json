@@ -141,6 +141,89 @@
                     "type": "string"
             }
         }
+    },
+    "COMPRAS.DBF":{
+        "fields": {
+            "NO_REFEREN":{
+                    "dbf": "NO_REFEREN",
+                    "velneo_table": "Folio" ,
+                    "type": "number"
+            },
+            "F_EMISION":{
+                    "dbf": "F_EMISION",
+                    "velneo_table": "fecha" ,
+                    "type": "string"
+            },
+            "F_PAGO":{
+                    "dbf": "F_PAGO",
+                    "velneo_table": "fecha_pago" ,
+                    "type": "string"
+            },
+            "F_RECIBE":{
+                    "dbf": "F_RECIBE",
+                    "velneo_table": "fecha_recepcion" ,
+                    "type": "string"
+            },
+            "CLAVE_PRO ":{
+                    "dbf": "CLAVE_PRO ",
+                    "velneo_table": "clave_producto" ,
+                    "type": "string"
+            },
+            "CLAVE_USR":{
+                    "dbf": "CLAVE_USR",
+                    "velneo_table": "clave_usuario" ,
+                    "type": "string"
+            },
+            "ALMACEN":{
+                    "dbf": "ALMACEN",
+                    "velneo_table": "alm" ,
+                    "type": "string"
+            },
+            "MODHOR":{
+                    "dbf": "MODHOR",
+                    "velneo_table": "hora_mod" ,
+                    "type": "string"
+            }
+        }
+    },
+    "PARTCOMP.DBF":{
+        "fields": {
+            "NO_REFEREN":{
+                    "dbf": "NO_REFEREN",
+                    "velneo_table": "Folio" ,
+                    "type": "number"
+            },
+            "TIPO_DOC":{
+                    "dbf": "TIPO_DOC",
+                    "velneo_table": "Cabecera" ,
+                    "type": "string"
+            },
+            "CLAVE_ART":{
+                    "dbf": "CLAVE_ART",
+                    "velneo_table": "art" ,
+                    "type": "string"
+            },
+            "CANTIDAD":{
+                    "dbf": "CANTIDAD",
+                    "velneo_table": "can" ,
+                    "type": "number"
+            },
+            "PRECIO_UNI":{
+                    "dbf": "PRECIO_UNI",
+                    "velneo_table": "precio" ,
+                    "type": "number"
+            },
+            "DESCUENTO":{
+                    "dbf": "DESCUENTO",
+                    "velneo_table": "desc" ,
+                    "type": "number"
+            },
+            "TIENDA ":{
+                    "dbf": "TIENDA ",
+                    "velneo_table": "tienda" ,
+                    "type": "number"
+            }
+        }
     }
 }
     

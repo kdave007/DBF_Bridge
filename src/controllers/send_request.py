@@ -147,6 +147,9 @@ class SendRequest:
                     post_data = json.dumps(single_payload, cls=CustomJSONEncoder)
                     print(f"POST Request URL: {self.base_url}?api_key={self.api_key}")
                     print(f"POST Request Data: {post_data}")
+
+                    print("STOP")
+                    sys.exit()
                     
                     response = requests.post(
                         f"{self.base_url}?api_key={self.api_key}", 

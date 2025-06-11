@@ -17,8 +17,8 @@ class VentasController:
         """
         self.config = config
         self.mapping_manager = mapping_manager
-        self.venta_dbf = "VENTA.DBF"  # Header table
-        self.partvta_dbf = "PARTVTA.DBF"  # Details table
+        self.venta_dbf = "COMPRAS.DBF"  # Header table
+        self.partvta_dbf = "PARTCOMP.DBF"  # Details table
         
         # Initialize DBF reader
         DBFConnection.set_dll_path(self.config.dll_path)
@@ -97,14 +97,14 @@ class VentasController:
         raw_data_str = self.reader.to_json(self.partvta_dbf, 0, filters)
 
         read_time = time.time() - read_start
-        print(f"Time to read PARTVTA.DBF with filter: {read_time:.2f} seconds")
+        print(f"Time to read PARTCOMP.DBF with filter: {read_time:.2f} seconds")
         
         parse_start = time.time()
 
         raw_data = json.loads(raw_data_str)
         
         parse_time = time.time() - parse_start
-        print(f"Time to parse PARTVTA JSON: {parse_time:.2f} seconds")
+        print(f"Time to parse PARTCOMP JSON: {parse_time:.2f} seconds")
 
         # Organize details by folio
         details_by_folio = {}
@@ -137,12 +137,12 @@ class VentasController:
         read_start = time.time()
         raw_data_str = self.reader.to_json(self.venta_dbf, self.config.limit_rows, filters)
         read_time = time.time() - read_start
-        print(f"Time to read VENTA.DBF: {read_time:.2f} seconds")
+        print(f"Time to read COMPRAS.DBF: {read_time:.2f} seconds")
         
         parse_start = time.time()
         raw_data = json.loads(raw_data_str)
         parse_time = time.time() - parse_start
-        print(f"Time to parse VENTA JSON: {parse_time:.2f} seconds")
+        print(f"Time to parse COMPRAS JSON: {parse_time:.2f} seconds")
 
         transformed_data = []
         for record in raw_data:
