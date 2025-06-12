@@ -33,9 +33,9 @@ class SendRequest:
         
         # API configuration
         self.base_url = "http://localhost:3000/api/data"  # Replace with your actual API URL
-        self.base_url = "https://c8.velneo.com:17262/api/vLatamERP_db_dat/v2/vta_fac_g"
+        self.base_url = "https://c8.velneo.com:17262/api/vLatamERP_db_dat/v2/com_fac_g"
         self.api_key = "123456"
-        self.table_name = "vta_fac_g"
+        self.table_name = "com_fac_g"
         self.headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
@@ -115,26 +115,17 @@ class SendRequest:
                         single_payload = {
                             "emp":str(dbf_record.get('emp')),
                             "emp_div": str(dbf_record.get('emp_div')),
-                            "num_doc":folio,
-                            "clt": dbf_record.get('clt'),
-                            # "fpg": dbf_record.get('fpg'),
-                            "fpg": 1,
-                            "cmr": dbf_record.get('cmr'),
+                            "nro_ctr":folio,
+                            "fpg": dbf_record.get('fpg'),
                             "fch": self._format_date_to_iso(dbf_record.get("fecha")),
-                            # "tot_fac": dbf_record.get("total_bruto"),
                             "ser":dbf_record.get('ser'),
                             "hor":self._format_hour_to_12h(dbf_record.get('hor')),
-                            "pai":dbf_record.get('pai'),
-                            "ent_rel_tip":1,
-                            "mon_c":1,
-                            "cot":1,
-                            "fch_vto":self._format_date_to_iso(dbf_record.get("fecha")),
-                            "pre_con_iva_inc":1,
-                            "trm":1,
-                            "dum":1,
+                            "mon_c":dbf_record.get("mon_c"),
+                            "fch_rec":self._format_date_to_iso(dbf_record.get("fecha_recepcion")),
+                            "fch_vto":self._format_date_to_iso(dbf_record.get("fecha_pago")),
                             "off":1,
                             "alm":str(dbf_record.get('alm')),
-                            "fac":"1"
+                            "num_fac_prv":f"{folio}-{dbf_record.get('alm')}"
                         }
                     except Exception as e:
                         print(f'{e}')
@@ -148,8 +139,7 @@ class SendRequest:
                     print(f"POST Request URL: {self.base_url}?api_key={self.api_key}")
                     print(f"POST Request Data: {post_data}")
 
-                    print("STOP")
-                    sys.exit()
+                    
                     
                     response = requests.post(
                         f"{self.base_url}?api_key={self.api_key}", 
@@ -167,18 +157,18 @@ class SendRequest:
                             response_json = response.json()
                             print(f"Response JSON for folio {folio}: {response_json}")
                             
-                            if 'vta_fac_g' not in response_json:
-                                print(f"Key 'vta_fac_g' not found in response for folio {folio}. Full response: {response_json}")
+                            if 'com_fac_g' not in response_json:
+                                print(f"Key 'com_fac_g' not found in response for folio {folio}. Full response: {response_json}")
                                 continue
                                 
-                            if not response_json['vta_fac_g']:
-                                print(f"'vta_fac_g' is empty for folio {folio}. Full response: {response_json}")
+                            if not response_json['com_fac_g']:
+                                print(f"'com_fac_g' is empty for folio {folio}. Full response: {response_json}")
                                 continue
                                 
                             # Process each item in the response
-                            for resp_item in response_json['vta_fac_g']:
+                            for resp_item in response_json['com_fac_g']:
                                 id_value = resp_item.get('id')
-                                folio_str = str(resp_item.get('num_doc'))
+                                folio_str = str(resp_item.get('nro_ctr'))
                                 
                                 # Find the original item
                                 original_item = folio_to_item.get(folio_str)
@@ -274,24 +264,17 @@ class SendRequest:
                         "id":item.get("id"),
                         "emp":str(dbf_record.get('emp')),
                         "emp_div": str(dbf_record.get('emp_div')),
-                        "num_fac": f'VTA/-"{folio}',
-                        "num_doc":folio,
-                        "clt": dbf_record.get('clt'),
+                        "nro_ctr":folio,
                         "fpg": dbf_record.get('fpg'),
-                        "cmr": dbf_record.get('cmr'),
                         "fch": self._format_date_to_iso(dbf_record.get("fecha")),
-                        "tot_fac": dbf_record.get("total_bruto"),
                         "ser":dbf_record.get('ser'),
                         "hor":self._format_hour_to_12h(dbf_record.get('hor')),
-                        "pai":dbf_record.get('pai'),
-                        "ent_rel_tip":1,
-                        "mon_c":1,
-                        "cot":1,
-                        "fch_vto":self._format_date_to_iso(dbf_record.get("fecha")),
-                        "pre_con_iva_inc":1,
-                        "trm":1,
-                        "dum":1,
-                        "off":1
+                        "mon_c":dbf_record.get("mon_c"),
+                        "fch_rec":self._format_date_to_iso(dbf_record.get("fecha_recepcion")),
+                        "fch_vto":self._format_date_to_iso(dbf_record.get("fecha_pago")),
+                        "off":1,
+                        "alm":str(dbf_record.get('alm')),
+                        "num_fac_prv":f"{folio}-{dbf_record.get('alm')}"
                     }
                     
                     # Send the single record
@@ -316,18 +299,18 @@ class SendRequest:
                             response_json = response.json()
                             print(f"Response JSON for folio {folio}: {response_json}")
                             
-                            if 'vta_fac_g' not in response_json:
-                                print(f"Key 'vta_fac_g' not found in response for folio {folio}. Full response: {response_json}")
+                            if 'com_fac_g' not in response_json:
+                                print(f"Key 'com_fac_g' not found in response for folio {folio}. Full response: {response_json}")
                                 continue
                                 
-                            if not response_json['vta_fac_g']:
-                                print(f"'vta_fac_g' is empty for folio {folio}. Full response: {response_json}")
+                            if not response_json['com_fac_g']:
+                                print(f"'com_fac_g' is empty for folio {folio}. Full response: {response_json}")
                                 continue
                                 
                             # Process each item in the response
-                            for resp_item in response_json['vta_fac_g']:
+                            for resp_item in response_json['com_fac_g']:
                                 id_value = resp_item.get('id')
-                                folio_str = str(resp_item.get('num_doc'))
+                                folio_str = str(resp_item.get('nro_ctr'))
                                 
                                 # Find the original item
                                 original_item = folio_to_item.get(folio_str)

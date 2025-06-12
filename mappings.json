@@ -144,6 +144,11 @@
     },
     "COMPRAS.DBF":{
         "fields": {
+             "TIPO_DOC":{
+                   "dbf": "TIPO_DOC",
+                    "velneo_table": "Cabecera" ,
+                    "type": "string"
+            },    
             "NO_REFEREN":{
                     "dbf": "NO_REFEREN",
                     "velneo_table": "Folio" ,
@@ -164,9 +169,9 @@
                     "velneo_table": "fecha_recepcion" ,
                     "type": "string"
             },
-            "CLAVE_PRO ":{
-                    "dbf": "CLAVE_PRO ",
-                    "velneo_table": "clave_producto" ,
+            "CLAVE_PRO":{
+                    "dbf": "CLAVE_PRO",
+                    "velneo_table": "clave_prv" ,
                     "type": "string"
             },
             "CLAVE_USR":{
@@ -200,7 +205,7 @@
             },
             "CLAVE_ART":{
                     "dbf": "CLAVE_ART",
-                    "velneo_table": "art" ,
+                    "velneo_table": "REF" ,
                     "type": "string"
             },
             "CANTIDAD":{

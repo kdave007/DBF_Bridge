@@ -310,6 +310,31 @@ class VelneoMappings:
             if conn:
                 conn.close()
 
+    def get_prv(self, reference):
+        try:
+            conn = psycopg2.connect(**self.config)
+            cursor = conn.cursor()
+            
+            query = """
+            SELECT id_velneo FROM proveedor 
+            WHERE id_pvsi = %s
+            LIMIT 1
+            """
+            
+            cursor.execute(query, (reference,))
+            result = cursor.fetchone()
+            
+            return result[0] if result else None
+        
+        except Exception as e:
+            logging.error(f"Error retrieving proveedor method Velneo ID: {e}")
+            return None
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
     def get_articulo(self, reference):
         try:
             conn = psycopg2.connect(**self.config)

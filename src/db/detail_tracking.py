@@ -44,7 +44,7 @@ class DetailTracking:
             ) as conn:
                 with conn.cursor() as cursor:
                     query = sql.SQL("""
-                        INSERT INTO detalle_estado (
+                        INSERT INTO detalle_estado_compra (
                             id,folio, hash_detalle, fecha, estado, accion, ref
                         ) VALUES (%s, %s, %s, %s, %s, %s)
                         ON CONFLICT (id) 
@@ -90,7 +90,7 @@ class DetailTracking:
                 with conn.cursor() as cursor:
                     query = sql.SQL("""
                         SELECT id, folio, hash_detalle, fecha, estado, accion, ref
-                        FROM detalle_estado
+                        FROM detalle_estado_compra
                         WHERE folio = %s
                         ORDER BY id ASC
                     """)
@@ -127,7 +127,7 @@ class DetailTracking:
                 with conn.cursor() as cursor:
                     query = sql.SQL("""
                         SELECT id, folio, hash_detalle, fecha, estado, accion, ref
-                        FROM detalle_estado
+                        FROM detalle_estado_compra
                         WHERE fecha BETWEEN %s AND %s
                         ORDER BY fecha DESC, folio ASC
                     """)
@@ -186,7 +186,7 @@ class DetailTracking:
                     try:
                         # First delete all existing records for this ID
                         with conn.cursor() as cursor:
-                            delete_query = "DELETE FROM detalle_estado WHERE id = %s"
+                            delete_query = "DELETE FROM detalle_estado_compra WHERE id = %s"
                             cursor.execute(delete_query, (detail_id,))
                             deleted_count += cursor.rowcount
                             print(f"Deleted {cursor.rowcount} existing records for ID {detail_id}")
@@ -195,7 +195,7 @@ class DetailTracking:
                         with conn.cursor() as cursor:
                             # Insert query
                             insert_query = """
-                                INSERT INTO detalle_estado (
+                                INSERT INTO detalle_estado_compra (
                                     id, folio, hash_detalle, fecha, estado, accion, ref
                                 ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                             """
@@ -287,7 +287,7 @@ class DetailTracking:
                         # Query to get max index for each folio
                         count_query = """
                             SELECT folio, MAX(CAST(SPLIT_PART(id, '-', 2) AS INTEGER)) as max_index
-                            FROM detalle_estado
+                            FROM detalle_estado_compra
                             GROUP BY folio
                         """
                         cursor.execute(count_query)
@@ -302,7 +302,7 @@ class DetailTracking:
                 # Continue with inserts
                 with conn.cursor() as cursor:
                     query = sql.SQL("""
-                        INSERT INTO detalle_estado (
+                        INSERT INTO detalle_estado_compra (
                             id, folio, hash_detalle, fecha, estado, accion, ref
                         ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                         ON CONFLICT (folio, ref) DO UPDATE SET

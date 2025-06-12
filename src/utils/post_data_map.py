@@ -216,6 +216,24 @@ class DataMap:
         except Exception as e:
             logging.error(f"Error mapping articulo with ref {ref}: {e}")
             return None
+
+    def apply_map_proveedor(self, ref: str) -> Optional[int]:
+        """Get the Velneo ID for iva from the database
+        
+        Args:
+            ref: The reference code from the DBF record
+            
+        Returns:
+            int: The mapped Velneo ID or None if not found
+        """
+        if not ref:
+            return None
+            
+        try:
+            return self.velneo_mappings.get_prv(ref)
+        except Exception as e:
+            logging.error(f"Error mapping articulo with ref {ref}: {e}")
+            return None
     
     def process_record_fac(self, record: Dict[str, Any]) -> Dict[str, Any]:
         """Process a complete record by applying all relevant mappings
@@ -235,6 +253,8 @@ class DataMap:
         # result['clt'] = self.apply_map_cliente()
             
         result['fpg'] = self.apply_map_metodo_pago('EF')#HARDCODED
+
+        result['prv'] = self.apply_map_proveedor('DIK')# HARDCODED 
             
         # result['cmr'] = self.apply_map_vendedor(1)
             
@@ -252,24 +272,6 @@ class DataMap:
 
         # print(f' MAP FAC AFTER {result}')
 
-        """
-        cab
-        {
-            "fch": "2025-05-22",
-            "prv":1,
-            "fpg": 1,
-            "ser":7,
-            "hor":"10:00",
-            "alm": "XALAPROTON",
-            "mon_c":1,
-            "fch_rec": "2025-05-22",
-            "emp":"SIVX",
-            "emp_div":"SIVX2" ,         
-            "num_fac_prv":"40",
-            "off":1
-        }
-        """
-            
         return result
 
     def process_record_det(self, record: Dict[str, Any]) -> Dict[str, Any]:
@@ -289,19 +291,19 @@ class DataMap:
 
         result['emp_div'] = self.apply_map_div()
 
-        result['emp'] = self.apply_map_emp()
+        # result['emp'] = self.apply_map_emp()
 
         result['art'] = self.apply_map_articulo(record['REF'])
      
             
-        result['ser_vta'] = self.apply_map_serie_compra()
+        result['ser_com'] = self.apply_map_serie_compra()
      
         #result['mov_tip'] = self.apply_map_tipo_mov(record['tipo_mov'])
         result['mov_tip'] = 'C'
 
         result['reg_iva_com'] = self.apply_map_tipo_iva(record['iva_com']) 
 
-        result['clt'] = self.apply_map_cliente()
+        # result['clt'] = self.apply_map_cliente()
 
         # print(f' MAP DETAIL AFTER {result}')
    

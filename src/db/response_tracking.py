@@ -10,7 +10,7 @@ class ResponseTracking:
         self.config = db_config 
 
     def delete_by_id(self, id) -> bool:
-        """Delete a record from estado_factura_venta by ID"""
+        """Delete a record from estado_factura_compra by ID"""
         try:
             # Connect with explicit parameters instead of using **
             with psycopg2.connect(
@@ -23,7 +23,7 @@ class ResponseTracking:
                 with conn.cursor() as cursor:
                     # Delete record by ID
                     query = sql.SQL("""
-                        DELETE FROM estado_factura_venta
+                        DELETE FROM estado_factura_compra
                         WHERE id = %s
                         RETURNING id
                     """)
@@ -64,7 +64,7 @@ class ResponseTracking:
                 with conn.cursor() as cursor:
                     # Insert o update si existe
                     query = sql.SQL("""
-                        INSERT INTO estado_factura_venta (
+                        INSERT INTO estado_factura_compra (
                             id,folio, total_partidas, hash,
                             fecha_procesamiento, estado, fecha_emision, accion
                         ) VALUES (%s,%s, %s, %s, %s, %s, %s, %s)

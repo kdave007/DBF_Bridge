@@ -53,21 +53,20 @@ class SendDetails:
                 # Map the record fields to the expected payload structure
                 single_payload = {
                     "id": str(record.get('sql_id')),
-                     # "emp": str(record.get('emp')),
-                    "emp_div": str(record.get('emp_div')),
-                    "can_und": record.get('cantidad'),
-                    "por_dto": record.get('descuento'),
-                    "pre": record.get('precio'),
-                    "fch": record.get('fecha'),
+                    "alm":str(record.get('alm')),
                     "art": record.get('art'),
-                    "vta_fac": record.get('parent_id'),
-                    "vta_fac_num_lin": i+1,
                     "und_med":1,
+                    "can_und": record.get('can'),
+                    "emp_div": str(record.get('emp_div')),
+                    "emp": str(record.get('emp')),
+                    "fch": self._format_date_to_iso(record.get("fecha")),
                     "hor":self._format_hour_to_12h(record.get('hor')),
-                    "reg_iva_vta":record.get('reg_iva_vta'),
+                    "pre": record.get('precio'),
+                    "por_dto": record.get('desc'),
+                    "reg_iva_com":record.get('reg_iva_com'),
+                    "com_fac": record.get('parent_id'),
                     "mov_tip":record.get('mov_tip'),
-                    "ser_vta":str(record.get('ser_vta')),
-                    "alm":str(record.get('alm'))
+                    "cal_arr":1
                 }
                 
                 # Convert payload to JSON
@@ -193,17 +192,15 @@ class SendDetails:
                     "alm":str(record.get('alm')),
                     "art": record.get('art'),
                     "und_med":1,
-                    "can_und": record.get('cantidad'),
-                    "can":record.get('cantidad'),
+                    "can_und": record.get('can'),
                     "emp_div": str(record.get('emp_div')),
                     "emp": str(record.get('emp')),
                     "fch": self._format_date_to_iso(record.get("fecha")),
                     "hor":self._format_hour_to_12h(record.get('hor')),
                     "pre": record.get('precio'),
-                    "por_dto": record.get('descuento'),
-                    "reg_iva_vta":record.get('reg_iva_vta'),
-                    "vta_fac": record.get('parent_id'),
-                    "clt":record.get('clt'),
+                    "por_dto": record.get('desc'),
+                    "reg_iva_com":record.get('reg_iva_com'),
+                    "com_fac": record.get('parent_id'),
                     "mov_tip":record.get('mov_tip'),
                     "cal_arr":1
                 }
@@ -216,7 +213,8 @@ class SendDetails:
                 print(f"URL: {post_url}")
                 print(f"Payload: {post_data}")
                 
-
+                # print("STOP")
+                # sys.exit()
                
                 # Send the POST request
                 response = requests.post(post_url, data=post_data, headers=headers)
