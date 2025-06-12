@@ -71,7 +71,7 @@ class VelneoMappings:
             if conn:
                 conn.close()
 
-    def get_from_general_serie(self):
+    def get_from_general_serie_compra(self):
         """Get the Velneo ID for a serie from general_misc table
         
         Args:
@@ -86,7 +86,7 @@ class VelneoMappings:
             
             query = """
             SELECT id_velneo FROM general_misc 
-            WHERE title = 'serie'
+            WHERE title = 'serie_compra'
             """
             
             cursor.execute(query)
@@ -119,6 +119,38 @@ class VelneoMappings:
             query = """
             SELECT id_velneo FROM general_misc 
             WHERE title = 'empresa'
+            """
+            
+            cursor.execute(query)
+            result = cursor.fetchone()
+            
+            return result[0] if result else None
+            
+        except Exception as e:
+            logging.error(f"Error retrieving empresa Velneo ID: {e}")
+            return None
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+    
+    def get_from_general_mon(self):
+        """Get the Velneo ID for an division (company) from general_misc table
+        
+        Args:
+            reference: The reference to look for (id_psi)
+            
+        Returns:
+            int: The Velneo ID (id_velneo) if found, None otherwise
+        """
+        try:
+            conn = psycopg2.connect(**self.config)
+            cursor = conn.cursor()
+            
+            query = """
+            SELECT id_velneo FROM general_misc 
+            WHERE title = 'moneda'
             """
             
             cursor.execute(query)
@@ -311,7 +343,7 @@ class VelneoMappings:
             
             query = """
             SELECT velneo FROM iva 
-            WHERE pvsi = %s
+            WHERE porcentaje = %s
             LIMIT 1
             """
             

@@ -179,9 +179,9 @@
                     "velneo_table": "alm" ,
                     "type": "string"
             },
-            "MODHOR":{
-                    "dbf": "MODHOR",
-                    "velneo_table": "hora_mod" ,
+            "MODHORA":{
+                    "dbf": "MODHORA",
+                    "velneo_table": "hor" ,
                     "type": "string"
             }
         }
@@ -222,6 +222,11 @@
                     "dbf": "TIENDA ",
                     "velneo_table": "tienda" ,
                     "type": "number"
+            },
+            "IMPUESTO":{
+                "dbf": "IMPUESTO",
+                "velneo_table": "iva_com" ,
+                "type": "number"
             }
         }
     }

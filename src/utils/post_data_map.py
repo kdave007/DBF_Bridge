@@ -23,14 +23,14 @@ class DataMap:
         self.db_config = db_config or PostgresConnection.get_db_config()
         self.velneo_mappings = VelneoMappings(self.db_config)
     
-    def apply_map_serie(self) -> Optional[int]:
+    def apply_map_serie_compra(self) -> Optional[int]:
         """Get the Velneo ID for serie from the database
         
         Returns:
             int: The mapped Velneo ID or None if not found
         """
         try:
-            return self.velneo_mappings.get_from_general_serie()
+            return self.velneo_mappings.get_from_general_serie_compra()
         except Exception as e:
             logging.error(f"Error mapping serie: {e}")
             return None
@@ -144,6 +144,24 @@ class DataMap:
         except Exception as e:
             logging.error(f"Error mapping division: {e}")
             return None
+
+    def apply_map_mon(self) -> Optional[int]:
+        """Get the Velneo ID for moneda from the database
+        
+        Args:
+            ref: The reference code from the DBF record (not used in current implementation)
+            
+        Returns:
+            int: The mapped Velneo ID or None if not found
+        """
+        try:
+            # Note: ref parameter is kept for consistency but not used in the current implementation
+            return self.velneo_mappings.get_from_general_mon()
+        except Exception as e:
+            logging.error(f"Error mapping division: {e}")
+            return None
+
+
     
     def apply_map_tipo_mov(self, ref: str) -> Optional[int]:
         """Get the Velneo ID for tipo_movimiento from the database
@@ -212,15 +230,15 @@ class DataMap:
         # print(f' MAP FAC BEFORE {record}')
         # Apply mappings based on available fields in the record
 
-        result['ser'] = self.apply_map_serie()
+        result['ser'] = self.apply_map_serie_compra()
             
-        result['clt'] = self.apply_map_cliente()
+        # result['clt'] = self.apply_map_cliente()
             
-        result['fpg'] = self.apply_map_metodo_pago(record['fpg'])
+        result['fpg'] = self.apply_map_metodo_pago('EF')#HARDCODED
             
-        result['cmr'] = self.apply_map_vendedor(1)
+        # result['cmr'] = self.apply_map_vendedor(1)
             
-        result['pai'] = self.apply_map_pais('México')
+        # result['pai'] = self.apply_map_pais('México')
 
         result['emp_div'] = self.apply_map_div()
 
@@ -228,8 +246,30 @@ class DataMap:
 
         result['alm'] = self.apply_map_alm()
 
+        result['mon_c'] = self.apply_map_mon()
+
+        #MON_C agregar y debe ser configurable en la bd-----------------
+
         # print(f' MAP FAC AFTER {result}')
-      
+
+        """
+        cab
+        {
+            "fch": "2025-05-22",
+            "prv":1,
+            "fpg": 1,
+            "ser":7,
+            "hor":"10:00",
+            "alm": "XALAPROTON",
+            "mon_c":1,
+            "fch_rec": "2025-05-22",
+            "emp":"SIVX",
+            "emp_div":"SIVX2" ,         
+            "num_fac_prv":"40",
+            "off":1
+        }
+        """
+            
         return result
 
     def process_record_det(self, record: Dict[str, Any]) -> Dict[str, Any]:
@@ -254,12 +294,12 @@ class DataMap:
         result['art'] = self.apply_map_articulo(record['REF'])
      
             
-        result['ser_vta'] = self.apply_map_serie()
+        result['ser_vta'] = self.apply_map_serie_compra()
      
         #result['mov_tip'] = self.apply_map_tipo_mov(record['tipo_mov'])
-        result['mov_tip'] = 'V'
+        result['mov_tip'] = 'C'
 
-        result['reg_iva_vta'] = self.apply_map_tipo_iva(record['iva_vta'])
+        result['reg_iva_com'] = self.apply_map_tipo_iva(record['iva_com']) 
 
         result['clt'] = self.apply_map_cliente()
 
