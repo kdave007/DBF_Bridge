@@ -125,7 +125,8 @@ class SendRequest:
                             "fch_vto":self._format_date_to_iso(dbf_record.get("fecha_pago")),
                             "off":1,
                             "alm":str(dbf_record.get('alm')),
-                            "num_fac_prv":f"{folio}-{dbf_record.get('alm')}"
+                            "num_fac_prv":f"{folio}-{dbf_record.get('alm')}",
+                            "prv":3
                         }
                     except Exception as e:
                         print(f'{e}')
@@ -274,7 +275,8 @@ class SendRequest:
                         "fch_vto":self._format_date_to_iso(dbf_record.get("fecha_pago")),
                         "off":1,
                         "alm":str(dbf_record.get('alm')),
-                        "num_fac_prv":f"{folio}-{dbf_record.get('alm')}"
+                        "num_fac_prv":f"{folio}-{dbf_record.get('alm')}",
+                        "prv":3
                     }
                     
                     # Send the single record

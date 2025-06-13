@@ -108,7 +108,7 @@ class SendDetails:
                                 record_result['detail_id'] = record_id
                                 print(f"Extracted detail update ID: {record_id}")
 
-                                self.send_update_fac_off(record.get('parent_id'), self._format_date_to_iso(record.get("fecha"))) 
+                                self.send_rbo_process(record.get('parent_id'), self._format_date_to_iso(record.get("fecha"))) 
 
                         record_result['success'] = True
                         result_counts['success'] += 1
@@ -247,7 +247,7 @@ class SendDetails:
                                 record_result['parent_id'] = record.get('parent_id')
                                 print(f"Extracted detail ID: {record_id}")
 
-                                self.send_update_fac_off(record.get('parent_id'), self._format_date_to_iso(record.get("fecha"))) 
+                                self.send_rbo_process(record.get('parent_id'), self._format_date_to_iso(record.get("fecha"))) 
 
                         
                         record_result['success'] = True
@@ -440,7 +440,7 @@ class SendDetails:
             return f"{hour_value}:00:00"  # Return original if parsing fails
 
 
-    def send_update_fac_off(self, id, date):
+    def send_rbo_process(self, id, date):
         """
         Send a request to set the 'off' field to 0 for a specific record
         
@@ -455,7 +455,7 @@ class SendDetails:
         
         try:
             # API configuration
-            base_url = "https://c8.velneo.com:17262/api/vLatamERP_db_dat/v2/vta_fac_g"
+            base_url = "https://c8.velneo.com:17262/api/vLatamERP_db_dat/v2/_process/gen_pgo_aut_fac_com_api"
             api_key = "123456"
             headers = {
                 "Content-Type": "application/json",
@@ -470,18 +470,19 @@ class SendDetails:
             })
             
             # Construct URL with the ID
-            post_url = f"{base_url}/{id}?api_key={api_key}"
-            
-            print(f"Sending off=0 update for ID: {id}")
+            post_url = f"{base_url}/?api_key={api_key}&params[ID_COM_FAC_C]={id}"
             print(f"URL: {post_url}")
-            print(f"Payload: {post_data}")
+          
             
             # Send the POST request
-            response = requests.post(post_url, data=post_data, headers=headers)
+            response = requests.get(post_url, headers=headers)
             
             # Process response
             if response.status_code in [200, 201, 202, 204]:
                 print(f"Successfully updated off field for ID {id}")
+                print(response)
+                print(response.text)
+
                 return {
                     "success": True,
                     "id": id,
