@@ -123,7 +123,7 @@ class SendRequest:
                             "mon_c":dbf_record.get("mon_c"),
                             "fch_rec":self._format_date_to_iso(dbf_record.get("fecha_recepcion")),
                             "fch_vto":self._format_date_to_iso(dbf_record.get("fecha_pago")),
-                            "off":1,
+                            # "off":1,
                             "alm":str(dbf_record.get('alm')),
                             "num_fac_prv":f"{folio}-{dbf_record.get('alm')}",
                             "prv":3
@@ -273,7 +273,7 @@ class SendRequest:
                         "mon_c":dbf_record.get("mon_c"),
                         "fch_rec":self._format_date_to_iso(dbf_record.get("fecha_recepcion")),
                         "fch_vto":self._format_date_to_iso(dbf_record.get("fecha_pago")),
-                        "off":1,
+                        # "off":1,
                         "alm":str(dbf_record.get('alm')),
                         "num_fac_prv":f"{folio}-{dbf_record.get('alm')}",
                         "prv":3
