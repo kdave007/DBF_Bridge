@@ -287,8 +287,7 @@ class SendRequest:
                         "fch_vto":self._format_date_to_iso(dbf_record.get("fecha")),
                         "pre_con_iva_inc":1,
                         "trm":1,
-                        "dum":1,
-                        "off":1
+                        "dum":1
                     }
                     
                     # Send the single record

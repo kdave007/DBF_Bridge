@@ -205,9 +205,7 @@ class SendDetails:
                     "vta_fac": record.get('parent_id'),
                     "clt":record.get('clt'),
                     "mov_tip":record.get('mov_tip'),
-                    "cal_arr":1,
-                    # "iva":16
-                    "off":1
+                    "cal_arr":1
                 }
                 
                 # Convert payload to JSON

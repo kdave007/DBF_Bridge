@@ -22,7 +22,7 @@ def main():
     print("=== Starting simple test for MatchesProcess ===")
      # Let's try with the exact date from your screenshot: 20/03/2025
     start_date = date(2025, 6, 17)  # year month day
-    end_date = date(2025, 6, 17)  # year month day
+    end_date = date(2025, 6, 18)  # year month day
 
     process = WorkFlow()
     
