@@ -109,7 +109,7 @@ class SendDetails:
                                 record_result['detail_id'] = record_id
                                 print(f"Extracted detail update ID: {record_id}")
 
-                                self.send_update_fac_off(record.get('parent_id'), self._format_date_to_iso(record.get("fecha"))) 
+                                # self.send_update_fac_off(record.get('parent_id'), self._format_date_to_iso(record.get("fecha"))) 
 
                         record_result['success'] = True
                         result_counts['success'] += 1
@@ -250,7 +250,7 @@ class SendDetails:
                                 record_result['parent_id'] = record.get('parent_id')
                                 print(f"Extracted detail ID: {record_id}")
 
-                                self.send_update_fac_off(record.get('parent_id'), str(record.get('emp')), str(record.get('emp_div')), self._format_hour_to_12h(record.get('hor')), self._format_date_to_iso(record.get("fecha")) ) 
+                                # self.send_update_fac_off(record.get('parent_id'), str(record.get('emp')), str(record.get('emp_div')), self._format_hour_to_12h(record.get('hor')), self._format_date_to_iso(record.get("fecha")) ) 
 
                         
                         record_result['success'] = True
