@@ -206,6 +206,7 @@ class SendDetails:
                     "clt":record.get('clt'),
                     "mov_tip":record.get('mov_tip'),
                     "cal_arr":1
+                   
                 }
                 
                 # Convert payload to JSON
@@ -249,7 +250,7 @@ class SendDetails:
                                 record_result['parent_id'] = record.get('parent_id')
                                 print(f"Extracted detail ID: {record_id}")
 
-                                self.send_update_fac_off(record.get('parent_id'), self._format_date_to_iso(record.get("fecha"))) 
+                                self.send_update_fac_off(record.get('parent_id'), str(record.get('emp')), str(record.get('emp_div')), self._format_hour_to_12h(record.get('hor')), self._format_date_to_iso(record.get("fecha")) ) 
 
                         
                         record_result['success'] = True
@@ -442,7 +443,7 @@ class SendDetails:
             return f"{hour_value}:00:00"  # Return original if parsing fails
 
 
-    def send_update_fac_off(self, id, date):
+    def send_update_fac_off(self, id, emp, emp_div, hor, fecha):
         """
         Send a request to set the 'off' field to 0 for a specific record
         
@@ -467,7 +468,11 @@ class SendDetails:
 
             # Prepare payload
             post_data = json.dumps({
-                "off": 0
+                "off": 0,
+                "emp":emp,
+                "emp_div":emp_div,
+                "hor":hor,
+                "fch":fecha
             })
             
             # Construct URL with the ID
