@@ -241,6 +241,8 @@ class MatchesProcess:
                             detail_with_refs['emp_div'] = record.get('emp_div')
                             detail_with_refs['ser_vta'] = record.get('ser_vta')
                             detail_with_refs['clt'] = record.get('clt')
+                            # detail_with_refs['imp_part'] = record.get('imp_part')
+                            # detail_with_refs['iva_part'] = record.get('iva_part')
                             
                             # Get mapped fields for the detail
                             detail_mapped = data_mapper.process_record_det(detail_with_refs)

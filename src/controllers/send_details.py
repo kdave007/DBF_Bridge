@@ -199,13 +199,15 @@ class SendDetails:
                     "emp": str(record.get('emp')),
                     "fch": self._format_date_to_iso(record.get("fecha")),
                     "hor":self._format_hour_to_12h(record.get('hor')),
-                    "pre": record.get('precio'),
+                    "pre": float(record.get('imp_part', 0)) + float(record.get('iva_part', 0)),
                     "por_dto": record.get('descuento'),
                     "reg_iva_vta":record.get('reg_iva_vta'),
                     "vta_fac": record.get('parent_id'),
                     "clt":record.get('clt'),
                     "mov_tip":record.get('mov_tip'),
-                    "cal_arr":1
+                    "cal_arr":1,
+                    # "iva":16
+                    "off":1
                 }
                 
                 # Convert payload to JSON
@@ -216,7 +218,7 @@ class SendDetails:
                 print(f"URL: {post_url}")
                 print(f"Payload: {post_data}")
                 
-
+                
                
                 # Send the POST request
                 response = requests.post(post_url, data=post_data, headers=headers)
@@ -467,8 +469,7 @@ class SendDetails:
 
             # Prepare payload
             post_data = json.dumps({
-                "off": 0,
-                "fch":date
+                "off": 0
             })
             
             # Construct URL with the ID

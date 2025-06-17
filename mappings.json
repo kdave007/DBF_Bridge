@@ -139,6 +139,16 @@
                     "dbf": "NO_IMPUES1",
                     "velneo_table": "iva_vta" ,
                     "type": "string"
+            },
+            "IMPXPART":{
+                "dbf": "IMPXPART",
+                "velneo_table": "imp_part" ,
+                "type": "string"
+            },
+            "IVAXPART":{
+                "dbf": "IVAXPART",
+                "velneo_table": "iva_part" ,
+                "type": "string"
             }
         }
     }
