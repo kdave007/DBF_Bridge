@@ -250,7 +250,7 @@ class SendDetails:
                                 record_result['parent_id'] = record.get('parent_id')
                                 print(f"Extracted detail ID: {record_id}")
 
-                                # self.send_update_fac_off(record.get('parent_id'), str(record.get('emp')), str(record.get('emp_div')), self._format_hour_to_12h(record.get('hor')), self._format_date_to_iso(record.get("fecha")) ) 
+                                self.send_update_fac_off(record.get('parent_id'), str(record.get('emp')), str(record.get('emp_div')) ) 
 
                         
                         record_result['success'] = True
@@ -469,10 +469,8 @@ class SendDetails:
             # Prepare payload
             post_data = json.dumps({
                 "off": 0,
-                "emp":emp,
-                "emp_div":emp_div,
-                "hor":hor,
-                "fch":fecha
+                "emp": emp,
+                "emp_div": emp_div
             })
             
             # Construct URL with the ID
@@ -487,13 +485,43 @@ class SendDetails:
             
             # Process response
             if response.status_code in [200, 201, 202, 204]:
-                print(f"Successfully updated off field for ID {id}")
-                return {
-                    "success": True,
-                    "id": id,
-                    "status_code": response.status_code,
-                    "response": response.text
-                }
+                try:
+                    # Parse the JSON response
+                    response_json = response.json()
+                    print(f"Response JSON: {json.dumps(response_json, indent=2)}")
+                    
+                    # Check if the response contains the expected structure and the same ID
+                    if ('vta_fac_g' in response_json and 
+                        isinstance(response_json['vta_fac_g'], list) and 
+                        len(response_json['vta_fac_g']) > 0 and 
+                        'id' in response_json['vta_fac_g'][0] and 
+                        str(response_json['vta_fac_g'][0]['id']) == str(id)):
+                        
+                        print(f"Successfully validated ID {id} in response")
+                        return {
+                            "success": True,
+                            "id": id,
+                            "status_code": response.status_code,
+                            "response": response.text
+                        }
+                    else:
+                        print(f"ID validation failed for ID {id}. Response does not contain matching ID.")
+                        return {
+                            "success": False,
+                            "id": id,
+                            "status_code": response.status_code,
+                            "error": "Response does not contain matching ID",
+                            "response": response.text
+                        }
+                except Exception as e:
+                    print(f"Error validating response for ID {id}: {str(e)}")
+                    return {
+                        "success": False,
+                        "id": id,
+                        "status_code": response.status_code,
+                        "error": f"Error validating response: {str(e)}",
+                        "response": response.text
+                    }
             else:
                 print(f"Failed to update off field for ID {id}. Status: {response.status_code}")
                 return {
