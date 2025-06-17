@@ -61,7 +61,7 @@ class SendDetails:
                     "emp": str(record.get('emp')),
                     "fch": self._format_date_to_iso(record.get("fecha")),
                     "hor":self._format_hour_to_12h(record.get('hor')),
-                    "pre": float(record.get('imp_vta'))+ float(record.get('pre_vta')),
+                    "pre": record.get('precio'),
                     "por_dto": record.get('desc'),
                     "reg_iva_com":record.get('reg_iva_com'),
                     "com_fac": record.get('parent_id'),
@@ -197,7 +197,7 @@ class SendDetails:
                     "emp": str(record.get('emp')),
                     "fch": self._format_date_to_iso(record.get("fecha")),
                     "hor":self._format_hour_to_12h(record.get('hor')),
-                    "pre": float(record.get('imp_vta'))+ float(record.get('pre_vta')),
+                    "pre": record.get('precio'),
                     "por_dto": record.get('desc'),
                     "reg_iva_com":record.get('reg_iva_com'),
                     "com_fac": record.get('parent_id'),
@@ -247,7 +247,7 @@ class SendDetails:
                                 record_result['parent_id'] = record.get('parent_id')
                                 print(f"Extracted detail ID: {record_id}")
 
-                                self.send_rbo_process(record.get('parent_id'), self._format_date_to_iso(record.get("fecha"))) 
+                                #self.send_rbo_process(record.get('parent_id'), self._format_date_to_iso(record.get("fecha"))) 
 
                         
                         record_result['success'] = True
