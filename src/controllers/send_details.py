@@ -443,7 +443,7 @@ class SendDetails:
             return f"{hour_value}:00:00"  # Return original if parsing fails
 
 
-    def send_update_fac_off(self, id, emp, emp_div, hor, fecha):
+    def send_update_fac_off(self, id, emp, emp_div):
         """
         Send a request to set the 'off' field to 0 for a specific record
         
