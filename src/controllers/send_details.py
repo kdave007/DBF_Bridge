@@ -61,7 +61,7 @@ class SendDetails:
                     "emp": str(record.get('emp')),
                     "fch": self._format_date_to_iso(record.get("fecha")),
                     "hor":self._format_hour_to_12h(record.get('hor')),
-                    "pre": record.get('precio'),
+                    "pre": float(record.get('imp_vta'))+ float(record.get('pre_vta')),
                     "por_dto": record.get('desc'),
                     "reg_iva_com":record.get('reg_iva_com'),
                     "com_fac": record.get('parent_id'),
@@ -197,13 +197,12 @@ class SendDetails:
                     "emp": str(record.get('emp')),
                     "fch": self._format_date_to_iso(record.get("fecha")),
                     "hor":self._format_hour_to_12h(record.get('hor')),
-                    "pre": record.get('precio'),
+                    "pre": float(record.get('imp_vta'))+ float(record.get('pre_vta')),
                     "por_dto": record.get('desc'),
                     "reg_iva_com":record.get('reg_iva_com'),
                     "com_fac": record.get('parent_id'),
                     "mov_tip":record.get('mov_tip'),
-                    "cal_arr":1,
-                    "iva":16
+                    "cal_arr":1
                 }
                 
                 # Convert payload to JSON

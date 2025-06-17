@@ -232,6 +232,16 @@
                 "dbf": "IMPUESTO",
                 "velneo_table": "iva_com" ,
                 "type": "number"
+            },
+            "PRECIOVTA":{
+                "dbf": "PRECIOVTA",
+                "velneo_table": "pre_vta" ,
+                "type": "string"
+            },
+            "IMPPREVTA":{
+                "dbf": "IMPPREVTA",
+                "velneo_table": "imp_vta" ,
+                "type": "string"
             }
         }
     }
