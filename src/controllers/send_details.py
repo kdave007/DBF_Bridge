@@ -202,7 +202,8 @@ class SendDetails:
                     "reg_iva_com":record.get('reg_iva_com'),
                     "com_fac": record.get('parent_id'),
                     "mov_tip":record.get('mov_tip'),
-                    "cal_arr":1
+                    "cal_arr":1,
+                    "iva":16
                 }
                 
                 # Convert payload to JSON
