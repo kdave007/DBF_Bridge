@@ -132,7 +132,6 @@ class SendRequest:
                             "pre_con_iva_inc":1,
                             "trm":1,
                             "dum":1,
-                            "off":1,
                             "alm":str(dbf_record.get('alm')),
                             "fac":"1"
                         }
