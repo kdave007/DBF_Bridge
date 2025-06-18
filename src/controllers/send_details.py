@@ -247,11 +247,25 @@ class SendDetails:
                                 record_result['parent_id'] = record.get('parent_id')
                                 print(f"Extracted detail ID: {record_id}")
 
-                                #self.send_rbo_process(record.get('parent_id'), self._format_date_to_iso(record.get("fecha"))) 
-
+                                # Check if this is the last detail for the current factura
+                                # This is true if it's the last record OR if the next record has a different folio
+                                is_last_detail_for_factura = (i == len(records) - 1) or \
+                                                         (i + 1 < len(records) and records[i + 1].get('folio') != record.get('folio'))
+                                
+                                if is_last_detail_for_factura:
+                                    print(f"Last detail for factura with folio {record.get('folio')}. Processing factura with parent_id: {record.get('parent_id')}")
+                                    # Call send_rbo_process for the current factura
+                                    self.send_rbo_process(record.get('parent_id'))
+                                
+                                record_result['success'] = True
+                                result_counts['success'] += 1
+                        else:
+                            #request was not successfull
+                            print('Request was not successful')
+                            record_result['success'] = False
+                            result_counts['failed'] += 1
+                            
                         
-                        record_result['success'] = True
-                        result_counts['success'] += 1
                     except ValueError:
                         print(f"Response (not JSON): {response.text}")
                         record_result['response'] = response.text
@@ -284,9 +298,6 @@ class SendDetails:
         print(f"Successful: {result_counts['success']}")
         print(f"Failed: {result_counts['failed']}")
         print("========================\n")
-
-
-        
         
         return result_counts
 
@@ -415,32 +426,7 @@ class SendDetails:
         
         return result_counts
 
-    def _format_hour_to_12h(self, hour_value):
-        """
-        Format hour value with minutes and seconds
-        
-        Args:
-            hour_value: Integer representing hour in 24-hour format (0-23)
-            
-        Returns:
-            String in format "hh:00:00"
-        """
-        if hour_value is None:
-            return ""
-            
-        try:
-            # Convert to integer if it's a string
-            if isinstance(hour_value, str):
-                hour_value = int(hour_value)
-                
-            # Format hour with minutes and seconds
-            return f"{hour_value:02d}:00:00"
-        except Exception as e:
-            print(f"Error formatting hour: {e}")
-            return f"{hour_value}:00:00"  # Return original if parsing fails
-
-
-    def send_rbo_process(self, id, date):
+    def send_rbo_process(self, id):
         """
         Send a request to set the 'off' field to 0 for a specific record
         
@@ -462,13 +448,8 @@ class SendDetails:
                 "Accept": "application/json",
                 "x-process-json": "true"
             }
-
-            # Prepare payload
-            post_data = json.dumps({
-                "off": 0,
-                "fch":date
-            })
-            
+                
+           
             # Construct URL with the ID
             post_url = f"{base_url}/?api_key={api_key}&params[ID_COM_FAC_C]={id}"
             print(f"URL: {post_url}")
