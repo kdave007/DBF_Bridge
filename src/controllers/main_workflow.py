@@ -4,6 +4,7 @@ from .find_matches_process import MatchesProcess
 from .api_response_tracking import APIResponseTracking
 from .send_request import SendRequest
 from .details_controller import DetailsController
+from .op import OP
 from datetime import date
 import os
 import sys
@@ -11,14 +12,24 @@ import sys
 class WorkFlow:
     def start(self, config, start_date, end_date):
 
-        
-
-
         self.matches_process = MatchesProcess()
         result = self.matches_process.compare_data(config, start_date, end_date)
         print(f' MAIN W Result {result}')
-        # print("STOP")
-        # sys.exit()
+
+        if result:
+            #{
+            # #     "update": update_results,
+            # #     "delete": delete_results,
+            # #     "create": add_results,
+            # #     "total_success": sum(r.get("success", False) for r in update_results + delete_results + add_results),
+            # #     "total_failed": sum(not r.get("success", False) for r in update_results + delete_results + add_results)
+            # # }
+            op = OP()
+            op.execute(result['api_operations'])
+
+
+        print("STOP")
+        sys.exit()
 
         
         # sample = {
