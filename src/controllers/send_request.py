@@ -7,6 +7,8 @@ from src.config.db_config import PostgresConnection
 from src.db.response_tracking import ResponseTracking
 import requests
 import json
+from decimal import Decimal
+from datetime import datetime, date
 
 
 class CustomJSONEncoder(json.JSONEncoder):
@@ -25,220 +27,209 @@ class SendRequest:
         # Initialize ResponseTracking with the configuration dictionary
         self.response_tracking = ResponseTracking(self.db_config)
 
-    def send(self, responses_dict):
-        """Process API operations in batches of 100 and track results"""
-        # responses_dict contains API operation results (update, delete, create)
-        if not responses_dict:
-            return False
+    # def send(self, responses_dict):
+    #     """Process API operations in batches of 100 and track results"""
+    #     # responses_dict contains API operation results (update, delete, create)
+    #     if not responses_dict:
+    #         return False
         
-        # API configuration
-        self.base_url = "http://localhost:3000/api/data"  # Replace with your actual API URL
-        self.base_url = "https://c8.velneo.com:17262/api/vLatamERP_db_dat/v2/vta_fac_g"
-        self.api_key = "123456"
-        self.table_name = "vta_fac_g"
-        self.headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "x-process-json": "true"
-        }
-        self.batch_size = 100
-        self.json_encoder = CustomJSONEncoder
+    #     # API configuration
+    #     self.base_url = "http://localhost:3000/api/data"  # Replace with your actual API URL
+    #     self.base_url = "https://c8.velneo.com:17262/api/vLatamERP_db_dat/v2/vta_fac_g"
+    #     self.api_key = "123456"
+    #     self.table_name = "vta_fac_g"
+    #     self.headers = {
+    #         "Content-Type": "application/json",
+    #         "Accept": "application/json",
+    #         "x-process-json": "true"
+    #     }
+    #     self.batch_size = 100
+    #     self.json_encoder = CustomJSONEncoder
         
-        # Separate operations by type
-        creates = responses_dict.get('create', [])
-        updates = responses_dict.get('update', [])
-        deletes = responses_dict.get('delete', [])
-        print("delete:")
-        print(deletes)
+    #     # Separate operations by type
+    #     creates = responses_dict.get('create', [])
+    #     updates = responses_dict.get('update', [])
+    #     deletes = responses_dict.get('delete', [])
+    #     print("delete:")
+    #     print(deletes)
         
 
-        # Initialize results dictionary
-        results = {
-            'create': {},
-            'update': {},
-            'delete': {},
-            'next_check':responses_dict.get('next_check', [])
-        }
+    #     # Initialize results dictionary
+    #     results = {
+    #         'create': {},
+    #         'update': {},
+    #         'delete': {},
+    #         'next_check':responses_dict.get('next_check', [])
+    #     }
         
-        # Process in batches
-        if creates:
-            print(f' CREATE PROCESS >>')
-            result_create = self.create(creates)
-            results['create'] = result_create
-            # print("Creates:")
-            # print(json.dumps(result_create, indent=4, cls=self.json_encoder))
+    #     # Process in batches
+    #     if creates:
+    #         print(f' CREATE PROCESS >>')
+    #         result_create = self.create(creates)
+    #         results['create'] = result_create
+    #         # print("Creates:")
+    #         # print(json.dumps(result_create, indent=4, cls=self.json_encoder))
 
-        if updates:  
-            print(f' UPDATE PROCESS >>')  
-            result_update = self.update(updates)
-            results['update'] = result_update
-            # print("Updates:")
-            # print(json.dumps(result_update, indent=4, cls=self.json_encoder))
+    #     if updates:  
+    #         print(f' UPDATE PROCESS >>')  
+    #         result_update = self.update(updates)
+    #         results['update'] = result_update
+    #         # print("Updates:")
+    #         # print(json.dumps(result_update, indent=4, cls=self.json_encoder))
 
-        if deletes:
-            print(f' DELETE PROCESS >>')
-            result_delete = self.delete(deletes)
-            results['delete'] = result_delete
-            # print("Deletes:")
-            # print(json.dumps(result_delete, indent=4, cls=self.json_encoder))
+    #     if deletes:
+    #         print(f' DELETE PROCESS >>')
+    #         result_delete = self.delete(deletes)
+    #         results['delete'] = result_delete
+    #         # print("Deletes:")
+    #         # print(json.dumps(result_delete, indent=4, cls=self.json_encoder))
         
-        return results
+    #     return results
 
-    def create(self, creates):
+    def create(self, record, base_url, api_key):
+        """
+        Process a single record and send it to the API
+        
+        Args:
+            record: A single record dictionary containing 'folio' and 'dbf_record'
+            
+        Returns:
+            Dictionary with 'success' and 'failed' lists containing the operation result
+        """
         results = {
             'success': [],  # Will store folio -> result for successful operations
             'failed': []   # Will store folio -> result for failed operations
         }
+
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
         
-        print(f"Processing {len(creates)} CREATE operations in batches of {self.batch_size}")
-        for i in range(0, len(creates), self.batch_size):
-            batch = creates[i:i+self.batch_size]
-            print(f"Processing CREATE batch {i//self.batch_size + 1} with {len(batch)} operations")
-            
+        folio = record.get('folio')
+        dbf_record = record.get('dbf_record', {})
+        
+        print(f"Processing CREATE operation for folio {folio}")
+        
+        try:
+            # Prepare payload for the single record
             try:
-                # Prepare batch payload
-                batch_payload = []
-                folio_to_item = {}
+                # Prepare payload for a single record
+                single_payload = {
+                    "emp": str(dbf_record.get('emp')),
+                    "emp_div": str(dbf_record.get('emp_div')),
+                    "num_doc": folio,
+                    "clt": dbf_record.get('clt'),
+                    # "fpg": dbf_record.get('fpg'),
+                    "fpg": 20,
+                    "cmr": dbf_record.get('cmr'),
+                    "fch": self._format_date_to_iso(dbf_record.get("fecha")),
+                    # "tot_fac": dbf_record.get("total_bruto"),
+                    "ser": dbf_record.get('ser'),
+                    "hor": self._format_hour_to_12h(dbf_record.get('hor')),
+                    "pai": dbf_record.get('pai'),
+                    "ent_rel_tip": 1,
+                    "mon_c": 1,
+                    "cot": 1,
+                    "fch_vto": self._format_date_to_iso(dbf_record.get("fecha")),
+                    "pre_con_iva_inc": 1,
+                    "trm": 1,
+                    "dum": 1,
+                    "alm": str(dbf_record.get('alm')),
+                    "fac": "1",
+                    "off": 1
+                }
+            except Exception as e:
+                print(f'Error preparing payload: {e}')
+                raise
+            
+            # Send the record
+            print(f"Sending record for folio {folio}")
+            post_data = json.dumps(single_payload, cls=CustomJSONEncoder)
+            print(f"POST Request URL: {base_url}?api_key={api_key}")
+            print(f"POST Request Data: {post_data}")
 
-                current_folio = None
 
-                # Process each item in the batch individually
-                print(f"CHECKPOINT AA ")
-                for item in batch:
-                    folio = item.get('folio')
-                    folio_to_item[folio] = item
-                    dbf_record = item.get('dbf_record', {})
-
-                    print(f"CHECKPOINT BB ")
-                    try:
-                        # Prepare payload for a single record
-                        single_payload = {
-                            "emp":str(dbf_record.get('emp')),
-                            "emp_div": str(dbf_record.get('emp_div')),
-                            "num_doc":folio,
-                            "clt": dbf_record.get('clt'),
-                            # "fpg": dbf_record.get('fpg'),
-                            "fpg": 1,
-                            "cmr": dbf_record.get('cmr'),
-                            "fch": self._format_date_to_iso(dbf_record.get("fecha")),
-                            # "tot_fac": dbf_record.get("total_bruto"),
-                            "ser":dbf_record.get('ser'),
-                            "hor":self._format_hour_to_12h(dbf_record.get('hor')),
-                            "pai":dbf_record.get('pai'),
-                            "ent_rel_tip":1,
-                            "mon_c":1,
-                            "cot":1,
-                            "fch_vto":self._format_date_to_iso(dbf_record.get("fecha")),
-                            "pre_con_iva_inc":1,
-                            "trm":1,
-                            "dum":1,
-                            "alm":str(dbf_record.get('alm')),
-                            "fac":"1",
-                            "off":1
-                        }
-                    except Exception as e:
-                        print(f'{e}')
+            # print("STOP")
+            # sys.exit()
+            
+            response = requests.post(
+                f"{base_url}?api_key={api_key}", 
+                headers = headers,
+                data=post_data
+            )
+            
+            print(f"Response Status Code for folio {folio}: {response.status_code}")
+            print(f"Response Headers for folio {folio}: {response.headers}")
+            
+            # Process the response
+            if response.status_code in [200, 201, 202, 204]:
+                try:
+                    # Parse response JSON
+                    response_json = response.json()
+                    print(f"Response JSON for folio {folio}: {response_json}")
                     
-
-                    print(f"CHECKPOINT CC ")
+                    if 'vta_fac_g' not in response_json:
+                        print(f"Key 'vta_fac_g' not found in response for folio {folio}. Full response: {response_json}")
+                        raise KeyError("'vta_fac_g' key not found in response")
                     
-                    # Send the single record
-                    print(f"Sending record for folio {folio}")
-                    post_data = json.dumps(single_payload, cls=CustomJSONEncoder)
-                    print(f"POST Request URL: {self.base_url}?api_key={self.api_key}")
-                    print(f"POST Request Data: {post_data}")
+                    if not response_json['vta_fac_g']:
+                        print(f"'vta_fac_g' is empty for folio {folio}. Full response: {response_json}")
+                        raise ValueError("'vta_fac_g' is empty in response")
                     
-                    response = requests.post(
-                        f"{self.base_url}?api_key={self.api_key}", 
-                        headers=self.headers, 
-                        data=post_data
-                    )
-                    
-                    print(f"Response Status Code for folio {folio}: {response.status_code}")
-                    print(f"Response Headers for folio {folio}: {response.headers}")
-                    
-                    # Process this individual response immediately
-                    if response.status_code in [200, 201, 202, 204]:
-                        try:
-                            # Parse response JSON
-                            response_json = response.json()
-                            print(f"Response JSON for folio {folio}: {response_json}")
-                            
-                            if 'vta_fac_g' not in response_json:
-                                print(f"Key 'vta_fac_g' not found in response for folio {folio}. Full response: {response_json}")
-                                continue
-                                
-                            if not response_json['vta_fac_g']:
-                                print(f"'vta_fac_g' is empty for folio {folio}. Full response: {response_json}")
-                                continue
-                                
-                            # Process each item in the response
-                            for resp_item in response_json['vta_fac_g']:
-                                id_value = resp_item.get('id')
-                                folio_str = str(resp_item.get('num_doc'))
-                                
-                                # Find the original item
-                                original_item = folio_to_item.get(folio_str)
-                                if not original_item:
-                                    print(f"Warning: Could not find original item for folio {folio_str}")
-                                    continue
-                                    
-                                dbf_record = original_item.get('dbf_record', {})
-                                
-                                # Add to success results
-                                results['success'].append({
-                                    'folio': folio_str,
-                                    'id': id_value,
-                                    'fecha_emision': dbf_record.get('fecha'),
-                                    'total_partidas': len(dbf_record.get('detalles', [])),
-                                    'hash': original_item.get('dbf_hash', ''),
-                                    'details': dbf_record.get('detalles', []),
-                                    'status': response.status_code
-                                })
-                                
-                                print(f"Successfully processed response for folio {folio_str}")
-                        except Exception as e:
-                            print(f"Error processing response for folio {folio}: {str(e)}")
-                            # Add to failed results
-                            results['failed'].append({
-                                'folio': folio,
-                                'fecha_emision': dbf_record.get('fecha'),
-                                'total_partidas': len(dbf_record.get('detalles', [])),
-                                'hash': item.get('dbf_hash', ''),
-                                'status': response.status_code,
-                                'error_msg': f"Error processing response: {str(e)}"
-                            })
-                    else:
-                        # Failed request
-                        error_message = f"Request failed with status {response.status_code}: {response.text}"
-                        print(f"Error for folio {folio}: {error_message}")
+                    # Process each item in the response
+                    for resp_item in response_json['vta_fac_g']:
+                        id_value = resp_item.get('id')
+                        folio_str = str(resp_item.get('num_doc'))
                         
-                        results['failed'].append({
-                            'folio': folio,
+                        # Add to success results
+                        results['success'].append({
+                            'folio': folio_str,
+                            'id': id_value,
                             'fecha_emision': dbf_record.get('fecha'),
                             'total_partidas': len(dbf_record.get('detalles', [])),
-                            'hash': item.get('dbf_hash', ''),
-                            'status': response.status_code,
-                            'error_msg': error_message
+                            'hash': record.get('dbf_hash', ''),
+                            'details': dbf_record.get('detalles', []),
+                            'status': response.status_code
                         })
-                # All response processing is now done individually for each record
                         
-            except Exception as e:
-                error_message = f"Exception during batch create: {str(e)}"
-                print(error_message)
-                # Mark all records in the batch as failed
-                for item in batch_payload:
-                        original_item = folio_to_item.get(folio)
-                        dbf_record = original_item.get('dbf_record', {})
-                        error_message = f"Batch create failed with status {response.status_code}: {response.text}"
-                        
-                        results['failed'].append({
-                            'folio': item.get('folio'), 
-                            'fecha_emision':  dbf_record.get('fecha'),
-                            'hash': original_item.get('dbf_hash', ''),
-                            'status': None,
-                            'error_msg':error_message
-                            })
+                        print(f"Successfully processed response for folio {folio_str}")
+                except Exception as e:
+                    print(f"Error processing response for folio {folio}: {str(e)}")
+                    # Add to failed results
+                    results['failed'].append({
+                        'folio': folio,
+                        'fecha_emision': dbf_record.get('fecha'),
+                        'total_partidas': len(dbf_record.get('detalles', [])),
+                        'hash': record.get('dbf_hash', ''),
+                        'status': response.status_code,
+                        'error_msg': f"Error processing response: {str(e)}"
+                    })
+            else:
+                # Failed request
+                error_message = f"Request failed with status {response.status_code}: {response.text}"
+                print(f"Error for folio {folio}: {error_message}")
+                
+                results['failed'].append({
+                    'folio': folio,
+                    'fecha_emision': dbf_record.get('fecha'),
+                    'total_partidas': len(dbf_record.get('detalles', [])),
+                    'hash': record.get('dbf_hash', ''),
+                    'status': response.status_code,
+                    'error_msg': error_message
+                })
+                
+        except Exception as e:
+            error_message = f"Exception during create operation: {str(e)}"
+            print(error_message)
+            # Mark the record as failed
+            results['failed'].append({
+                'folio': folio, 
+                'fecha_emision': dbf_record.get('fecha'),
+                'hash': record.get('dbf_hash', ''),
+                'status': None,
+                'error_msg': error_message
+            })
                   
         return results
 

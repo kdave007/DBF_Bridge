@@ -149,7 +149,7 @@ class SendDetails:
         
         return result_counts
 
-    def req_post(self, records):
+    def req_post(self, records, parent_ref):
         """
         Post records one by one to the API endpoint
         
@@ -172,6 +172,8 @@ class SendDetails:
             "Accept": "application/json",
             "x-process-json": "true"
         }
+
+        print(records)
         
         # Track results
         result_counts = {
@@ -197,12 +199,12 @@ class SendDetails:
                     "can":record.get('cantidad'),
                     "emp_div": str(record.get('emp_div')),
                     "emp": str(record.get('emp')),
-                    "fch": self._format_date_to_iso(record.get("fecha")),
+                    "fch": self._format_date_to_iso(parent_ref.get("fecha")),
                     "hor":self._format_hour_to_12h(record.get('hor')),
                     "pre": float(record.get('imp_part', 0)) + float(record.get('iva_part', 0)),
                     "por_dto": record.get('descuento'),
                     "reg_iva_vta":record.get('reg_iva_vta'),
-                    "vta_fac": record.get('parent_id'),
+                    "vta_fac": parent_ref.get('parent_id'),
                     "clt":record.get('clt'),
                     "mov_tip":record.get('mov_tip'),
                     "cal_arr":1
@@ -217,6 +219,9 @@ class SendDetails:
                 print(f"URL: {post_url}")
                 print(f"Payload: {post_data}")
                 
+                print("STOP")
+                sys.exit()
+            
                 
                
                 # Send the POST request
@@ -470,7 +475,8 @@ class SendDetails:
             post_data = json.dumps({
                 "off": 0,
                 "emp": emp,
-                "emp_div": emp_div
+                "emp_div": emp_div,
+                "fpg": 20
             })
             
             # Construct URL with the ID

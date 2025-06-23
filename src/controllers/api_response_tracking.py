@@ -7,79 +7,72 @@ from src.db.response_tracking import ResponseTracking
 
 class APIResponseTracking:
     def __init__(self):
-       pass
-
-    def update_tracker(self, responses_status):
-        # Get database configuration as a dictionary instead of a PostgresConnection instance
         self.db_config = PostgresConnection.get_db_config()
         
         # Initialize ResponseTracking with the configuration dictionary
         self.resp_tracking = ResponseTracking(self.db_config)
 
-        status_create = self._create_op(responses_status['create'])
-        print(f'status_create: {status_create}')
-        status_update = self._update_op(responses_status['update'])
-        print(f'status_update: {status_update}')
-        status_delete = self._delete_op(responses_status['delete'])
-        print(f'status_delete: {status_delete}')
+    # def update_tracker(self, responses_status):
 
-        next_step = False
+    #     status_create = self._create_op(responses_status['create'])
+    #     print(f'status_create: {status_create}')
+    #     status_update = self._update_op(responses_status['update'])
+    #     print(f'status_update: {status_update}')
+    #     status_delete = self._delete_op(responses_status['delete'])
+    #     print(f'status_delete: {status_delete}')
+
+    #     next_step = False
         
-        if status_create['execute']:
-            if status_create['done']:
-                next_step = True
-            else:
-                return False
+    #     if status_create['execute']:
+    #         if status_create['done']:
+    #             next_step = True
+    #         else:
+    #             return False
 
-        if status_update['execute']:
-            if status_update['done']:
-                next_step = True
-            else:
-                return False
+    #     if status_update['execute']:
+    #         if status_update['done']:
+    #             next_step = True
+    #         else:
+    #             return False
 
-        if status_delete['execute']:
-            if status_delete['done']:
-                next_step = True
-            else:
-                return False
-        print(f'CHECK ')
-        return next_step
+    #     if status_delete['execute']:
+    #         if status_delete['done']:
+    #             next_step = True
+    #         else:
+    #             return False
+    #     print(f'CHECK ')
+    #     return next_step
 
 
 
-    def _create_op(self, results):
+    def _create_op(self, item):
         action = 'agregado'
         estado = 'ca_completado'
-        done = False
-        execute = False
-
-        if results.get('success'):
-           execute = True
-           for item in results.get('success'):
-                # Parse the date string from DBF format to a proper date object
-                print(f'item to insert {item}')
-               
-                fecha_str = item.get('fecha_emision')
-                try:
-                    # Remove the 'a. m.' or 'p. m.' part and parse the date
-                    fecha_str = fecha_str.replace(' a. m.', '').replace(' p. m.', '')
-                    # Format is day/month/year in the DBF records
-                    fecha_date = datetime.strptime(fecha_str, '%d/%m/%Y %H:%M:%S').date()
-                except (ValueError, AttributeError):
-                    # Fallback to current date if parsing fails
-                    fecha_date = datetime.now().date()
-                    print(f"Warning: Could not parse date '{fecha_str}', using current date instead")
-                
-                done = self.resp_tracking.update_status(
-                    item.get('id'),
-                    item.get('folio'),
-                    item.get('total_partidas'),
-                    item.get('hash'),
-                    estado,
-                    action,
-                    fecha_date
-                )
-        return {'done': done, 'execute':execute}
+          
+        # Parse the date string from DBF format to a proper date object
+        print(f'item to insert {item}')
+        
+        fecha_str = item.get('fecha_emision')
+        try:
+            # Remove the 'a. m.' or 'p. m.' part and parse the date
+            fecha_str = fecha_str.replace(' a. m.', '').replace(' p. m.', '')
+            # Format is day/month/year in the DBF records
+            fecha_date = datetime.strptime(fecha_str, '%d/%m/%Y %H:%M:%S').date()
+        except (ValueError, AttributeError):
+            # Fallback to current date if parsing fails
+            fecha_date = datetime.now().date()
+            print(f"Warning: Could not parse date '{fecha_str}', using current date instead")
+        
+        return self.resp_tracking.update_status(
+            item.get('id'),
+            item.get('folio'),
+            item.get('total_partidas'),
+            item.get('hash'),
+            estado,
+            action,
+            fecha_date
+        )
+   
 
             
 
