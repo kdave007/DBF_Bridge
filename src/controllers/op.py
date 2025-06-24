@@ -2,12 +2,14 @@
 from .send_request import SendRequest
 from .send_details import SendDetails
 from .api_response_tracking import APIResponseTracking
+from src.config.db_config import PostgresConnection
 
 class OP:
     def execute(self, operations):
         self.send_req = SendRequest()
         self.send_det = SendDetails()
         self.api_track = APIResponseTracking()
+        self.db_config = PostgresConnection.get_db_config()
 
         self.bypass_ca = False
 
@@ -77,9 +79,12 @@ class OP:
                 
                 # Update the record status to indicate details were processed successfully
                 self.api_track._pa_completed(parent_ref['parent_id'])
+                self.api_track.update_create_details(det_req_results['records'])
                 
                 # Call after request handler
-                self._after_request(parent_ref['parent_id'], record['dbf_record'].get('detalles'))
+                emp =  record['dbf_record']['detalles'][0].get('emp')
+                emp_div =  record['dbf_record']['detalles'][0].get('emp_div')
+                self._after_request(parent_ref['parent_id'], emp, emp_div)
                 
 
     def _update(self, records):
@@ -93,8 +98,8 @@ class OP:
             print(f'------')
 
 
-    def _after_request(self, id, ref):
-        self.send_det.send_update_fac_off(id, ref['emp'], ref['emp_div'])
+    def _after_request(self, id, emp, emp_div):
+        self.send_det.send_update_fac_off(id, emp, emp_div)
 
     
 

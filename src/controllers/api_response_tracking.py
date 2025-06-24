@@ -3,6 +3,7 @@ import sys
 from datetime import datetime, date
 from src.config.db_config import PostgresConnection
 from src.db.response_tracking import ResponseTracking
+from src.db.detail_tracking import DetailTracking
 
 
 class APIResponseTracking:
@@ -160,3 +161,30 @@ class APIResponseTracking:
         print(f"Updating record {id} to status: {estado}, action: {action}")
         
         return self.resp_tracking.update_record_status(id, estado, action)
+
+    def update_create_details(self, records):
+        """
+        Insert or update records in the database
+        
+        Args:
+            db_connection: Database configuration dictionary
+            records: List of records to insert/update
+            
+        Returns:
+            Number of records successfully processed
+        """
+        if not records:
+            return 0
+            
+        # Create a DetailTracking instance with the database configuration
+        # db_connection is now a dictionary, not a PostgresConnection object
+        detail_tracker = DetailTracking(self.db_config)
+        
+        # Use batch_insert_details method to insert all records at once
+        success = detail_tracker.batch_replace_by_id(records)
+        
+        if success:
+            return len(records)
+        else:
+            print("Error inserting records")
+            return 0

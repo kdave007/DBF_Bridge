@@ -233,10 +233,10 @@ class SendDetails:
                 print(f'original record : {record}')
                 
                 record_result = {
-                    'folio': record.get('folio'),
-                    'ref': record.get('ref'),
+                    'folio': record.get('Folio'),
+                    'ref': record.get('REF'),
                     'status_code': status_code,
-                    "fecha": record.get('fecha'),
+                    "fecha": self._format_date_to_iso(parent_ref.get("fecha")),
                     'success': False,
                     'hash_detail': record.get('detail_hash')
                 }
@@ -252,9 +252,9 @@ class SendDetails:
                         if 'mov_g' in response_json: 
                             record_id = response_json['mov_g'][0].get('id')
                             if record_id:
-                                # record_result['detail_id'] = record_id
-                                # record_result['parent_id'] = record.get('parent_id')
-                                # print(f"Extracted detail ID: {record_id}")
+                                record_result['detail_id'] = record_id
+                                record_result['parent_id'] = parent_ref.get('parent_id')
+                                print(f"Extracted detail ID: {record_id}")
 
                                 # self.send_update_fac_off(record.get('parent_id'), str(record.get('emp')), str(record.get('emp_div')) ) 
                                 record_result['success'] = True
