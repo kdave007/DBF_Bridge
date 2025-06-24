@@ -9,7 +9,7 @@ class OP:
         self.send_det = SendDetails()
         self.api_track = APIResponseTracking()
 
-        self.bypass_ca = True
+        self.bypass_ca = False
 
         if "create" in operations:
             self._create(operations['create'])
@@ -31,7 +31,6 @@ class OP:
             
             # First request - can be bypassed
             first_request_success = False
-            second_request_success = False
             
             if self.bypass_ca:
                 print(f"Bypassing first API call for folio: {record.get('folio')}")
@@ -70,7 +69,17 @@ class OP:
                 
                 print(f"Ready to process details request for folio: {record.get('folio')}")
                 
-                self.send_det.req_post(record['dbf_record'].get('detalles'), parent_ref)
+                det_req_results = self.send_det.req_post(record['dbf_record'].get('detalles'), parent_ref)
+
+                if det_req_results['failed']:
+                    #one request failed, so skip to next CA
+                    continue
+                
+                # Update the record status to indicate details were processed successfully
+                self.api_track._pa_completed(parent_ref['parent_id'])
+                
+                # Call after request handler
+                self._after_request(parent_ref['parent_id'], record['dbf_record'].get('detalles'))
                 
 
     def _update(self, records):
@@ -84,12 +93,8 @@ class OP:
             print(f'------')
 
 
-    def _db_tracking(self, ref):
-        pass
-
-
-    def _after_request(self, id):
-        pass
+    def _after_request(self, id, ref):
+        self.send_det.send_update_fac_off(id, ref['emp'], ref['emp_div'])
 
     
 

@@ -144,4 +144,19 @@ class APIResponseTracking:
                 done = self.resp_tracking.delete_by_id(
                     item.get('id')
                 )
-        return {'done': done, 'execute':execute}
+                
+    def _pa_completed(self, id):
+        """Update record status to indicate that all details have been processed
+        
+        Args:
+            id: The ID of the record to update
+            
+        Returns:
+            bool: True if the update was successful, False otherwise
+        """
+        action = 'procesado'
+        estado = 'pa_completado'
+        
+        print(f"Updating record {id} to status: {estado}, action: {action}")
+        
+        return self.resp_tracking.update_record_status(id, estado, action)

@@ -219,8 +219,8 @@ class SendDetails:
                 print(f"URL: {post_url}")
                 print(f"Payload: {post_data}")
                 
-                print("STOP")
-                sys.exit()
+                # print("STOP")
+                # sys.exit()
             
                 
                
@@ -248,30 +248,29 @@ class SendDetails:
                         print(f"Response: {json.dumps(response_json, indent=2)}")
                         
                         # Extract ID from 'mov_g' key if it exists
-                        if 'mov_g' in response_json and isinstance(response_json['mov_g'], list) and len(response_json['mov_g']) > 0:
+                        # if 'mov_g' in response_json and isinstance(response_json['mov_g'], list) and len(response_json['mov_g']) > 0:
+                        if 'mov_g' in response_json: 
                             record_id = response_json['mov_g'][0].get('id')
                             if record_id:
-                                record_result['detail_id'] = record_id
-                                record_result['parent_id'] = record.get('parent_id')
-                                print(f"Extracted detail ID: {record_id}")
+                                # record_result['detail_id'] = record_id
+                                # record_result['parent_id'] = record.get('parent_id')
+                                # print(f"Extracted detail ID: {record_id}")
 
-                                self.send_update_fac_off(record.get('parent_id'), str(record.get('emp')), str(record.get('emp_div')) ) 
-
+                                # self.send_update_fac_off(record.get('parent_id'), str(record.get('emp')), str(record.get('emp_div')) ) 
+                                record_result['success'] = True
+                                result_counts['success'] += 1
                         
-                        record_result['success'] = True
-                        result_counts['success'] += 1
+                       
                     except ValueError:
                         print(f"Response (not JSON): {response.text}")
                         record_result['response'] = response.text
-                        record_result['success'] = True
-                        result_counts['success'] += 1
+                        result_counts['failed'] += 1
                 else:
                     print(f"Failed with status {status_code}: {response.text}")
                     record_result['error'] = response.text
                     result_counts['failed'] += 1
 
-                                   
-                
+           
                 # Add the record result to the tracking
                 result_counts['records'].append(record_result)
                 
@@ -292,10 +291,7 @@ class SendDetails:
         print(f"Successful: {result_counts['success']}")
         print(f"Failed: {result_counts['failed']}")
         print("========================\n")
-
-
-        
-        
+         
         return result_counts
 
 

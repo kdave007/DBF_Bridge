@@ -109,3 +109,51 @@ class ResponseTracking:
         except Exception as e:
             logging.error(f"Error insertando estado: {e}")
             return False
+            
+    def update_record_status(self, id: int, estado: str, accion: str) -> bool:
+        """Update only the estado and accion fields for a record by its ID
+        
+        Args:
+            id: The ID of the record to update
+            estado: The new estado value
+            accion: The new accion value
+            
+        Returns:
+            bool: True if the update was successful, False otherwise
+        """
+        try:
+            # Connect with explicit parameters
+            with psycopg2.connect(
+                host=self.config['host'],
+                database=self.config['database'],
+                user=self.config['user'],
+                password=self.config['password'],
+                port=self.config['port']
+            ) as conn:
+                with conn.cursor() as cursor:
+                    # Update only estado and accion fields
+                    query = sql.SQL("""
+                        UPDATE estado_factura_venta 
+                        SET estado = %s, 
+                            accion = %s,
+                            fecha_procesamiento = %s
+                        WHERE id = %s
+                        RETURNING id
+                    """)
+                    
+                    # Execute the query with current timestamp
+                    current_date = datetime.now()
+                    cursor.execute(query, (estado, accion, current_date, id))
+                    updated_id = cursor.fetchone()
+                    conn.commit()
+                    
+                    if updated_id:
+                        print(f"Successfully updated status for record with ID {id}")
+                        return True
+                    else:
+                        print(f"No record found with ID {id}")
+                        return False
+                        
+        except Exception as e:
+            logging.error(f"Error updating status for record with ID {id}: {e}")
+            return False
