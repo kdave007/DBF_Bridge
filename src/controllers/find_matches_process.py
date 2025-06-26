@@ -15,6 +15,7 @@ from src.config.dbf_config import DBFConfig
 from src.models.ventas_model import VentasModel
 from src.controllers.dbf_sql_comparator import DBFSQLComparator
 from src.controllers.insertion_process import InsertionProcess
+from src.db.retries_tracking import RetriesTracking
 
 class MatchesProcess:
 
@@ -25,6 +26,8 @@ class MatchesProcess:
         # Initialize the comparator and insertion processor
         self.comparator = DBFSQLComparator(self.db_config)
         self.insertion_processor = InsertionProcess(self.db_config)
+
+        self.retry_tracker = RetriesTracking(self.db_config)
 
     def compare_data(self, config, start_date, end_date):
         
@@ -61,6 +64,12 @@ class MatchesProcess:
         
         # Print summary of operations
         self.print_comparison_results(comparison_result)
+
+        self.dischard_by_retries(comparison_result, start_date, end_date)
+
+        print('STOP')
+        sys.exit()
+
 
         
         
@@ -250,3 +259,108 @@ class MatchesProcess:
                                 processed_results['data'][i]['detalles'][j][key] = value
         
         return processed_results
+
+    def dischard_by_retries(self, records, start_date, end_date):
+        """Remove records that have exceeded retry attempts
+        
+        Args:
+            records: Dictionary containing operation lists
+            start_date: Start date for retry tracking filter
+            end_date: End date for retry tracking filter
+        """
+        # Get folios to ignore based on retry count and date range
+        target_folios = self.retry_tracker.get_ignore_list(start_date, end_date)
+
+        if not target_folios:
+            print("No records to discard based on retry attempts")
+            return
+            
+        print(f"Found {len(target_folios)} folios to discard due to retry limits")
+        print(f"Folios to discard: {target_folios}")
+        
+        # Print initial summary before any changes
+        print("\n===== BEFORE DISCARDING RETRIES =====")
+        print(f"Summary before: {records['summary']}")
+        
+        for op in ['create', 'update', 'delete', 'next_check']:
+            if op in records and records[op]:
+                folios = [r.get('folio') for r in records[op] if r.get('folio')]
+                print(f"{op.capitalize()} records before: {len(records[op])} - Folios: {folios}")
+
+        # Process each operation type if it exists
+        operations = ['create', 'update', 'delete', 'next_check']
+        
+        # Print final summary after all changes
+        print("\n===== AFTER DISCARDING RETRIES =====")
+        print(f"Summary after: {records['summary']}")
+        
+        for op in ['create', 'update', 'delete', 'next_check']:
+            if op in records and records[op]:
+                folios = [r.get('folio') for r in records[op] if r.get('folio')]
+                print(f"{op.capitalize()} records after: {len(records[op])} - Folios: {folios}")
+
+
+    def synch_operations(self, records, target_folios, summary, operation):
+        """Remove records with folios that match those in target_folios list
+        
+        Args:
+            records: List of record dictionaries to filter
+            target_folios: List of folios to remove
+            summary: Dictionary containing summary counts
+            operation: Operation type (create, update, delete, next_check)
+        """
+        print(f"\n[DEBUG] synch_operations called with operation: {operation}")
+        print(f"[DEBUG] target_folios: {target_folios}")
+        print(f"[DEBUG] records length: {len(records) if records else 0}")
+        print(f"[DEBUG] summary before: {summary}")
+        
+        if not records or not target_folios:
+            print(f"[DEBUG] Early return - no records or no target folios")
+            return
+            
+        # Convert target_folios to a set for O(1) lookup
+        folio_set = set(target_folios)
+        print(f"[DEBUG] folio_set: {folio_set}")
+        
+        # Keep track of indices to remove
+        indices_to_remove = []
+        
+        # Find all records with matching folios
+        for i, record in enumerate(records):
+            folio = record.get('folio')
+            print(f"[DEBUG] Checking record {i} with folio {folio}")
+            if folio in folio_set:
+                indices_to_remove.append(i)
+                print(f"Discarding {operation} record with folio {folio} due to retry limit")
+        
+        print(f"[DEBUG] indices_to_remove: {indices_to_remove}")
+        
+        # Remove records in reverse order to avoid index shifting
+        for index in sorted(indices_to_remove, reverse=True):
+            print(f"[DEBUG] Removing record at index {index}")
+            records.pop(index)
+        
+        # Update summary counters
+        if indices_to_remove:
+            removed_count = len(indices_to_remove)
+            print(f"[DEBUG] removed_count: {removed_count}")
+            
+            # Update the specific operation counter
+            counter_key = f"{operation}_count"
+            print(f"[DEBUG] counter_key: {counter_key}")
+            print(f"[DEBUG] counter_key in summary: {counter_key in summary}")
+            
+            if counter_key in summary:
+                old_value = summary[counter_key]
+                summary[counter_key] -= removed_count
+                print(f"Updated {counter_key} from {old_value} to {summary[counter_key]}")
+            
+            # Update the total actions needed
+            if 'total_actions_needed' in summary:
+                old_total = summary['total_actions_needed']
+                summary['total_actions_needed'] -= removed_count
+                print(f"Updated total_actions_needed from {old_total} to {summary['total_actions_needed']}")
+                
+            print(f"Removed {removed_count} records from {operation} operation")
+            
+        print(f"[DEBUG] summary after: {summary}")

@@ -137,7 +137,8 @@ class SendRequest:
                     "dum": 1,
                     "alm": str(dbf_record.get('alm')),
                     "fac": "1",
-                    "off": 1
+                    "off": 1,
+                    "error de campor":1
                 }
             except Exception as e:
                 print(f'Error preparing payload: {e}')
