@@ -14,7 +14,7 @@ class WorkFlow:
 
         self.matches_process = MatchesProcess()
         result = self.matches_process.compare_data(config, start_date, end_date)
-        print(f' MAIN W Result {result}')
+        # print(f' MAIN W Result {result}')
 
         if result:
             #{
@@ -28,8 +28,8 @@ class WorkFlow:
             op.execute(result['api_operations'])
 
 
-        print("STOP")
-        sys.exit()
+        # print("STOP")
+        # sys.exit()
 
         
         # sample = {
@@ -53,6 +53,7 @@ class WorkFlow:
         #     }
         # }
         if result:
+            pass
             #print(f' api actions /////// { result['detailed_comparison']['api_operations']} //////////////////////////')
             # api = APIRequestProcess()
             # result = api.execute_actions(result['api_operations'])
@@ -64,21 +65,21 @@ class WorkFlow:
             # #     "total_failed": sum(not r.get("success", False) for r in update_results + delete_results + add_results)
             # # }
 
-            send_request = SendRequest()
-            requests_results = send_request.send(result['api_operations'])
+            # send_request = SendRequest()
+            # requests_results = send_request.send(result['api_operations'])
 
-            api_tracker = APIResponseTracking()
-            execution_done = api_tracker.update_tracker(requests_results)
+            # api_tracker = APIResponseTracking()
+            # execution_done = api_tracker.update_tracker(requests_results)
 
             
-            if execution_done:
-                #if we updated or posted anything, means we did actions, so check details, if not, continue
-                print('Checking details actions...')
-                details_controller = DetailsController()
-                details_controller.process(requests_results, start_date, end_date)
-            else:
-                pass
-                #check anyways the details
+            # if execution_done:
+            #     #if we updated or posted anything, means we did actions, so check details, if not, continue
+            #     print('Checking details actions...')
+            #     details_controller = DetailsController()
+            #     details_controller.process(requests_results, start_date, end_date)
+            # else:
+            #     pass
+            #     #check anyways the details
             
 
         return  result 
