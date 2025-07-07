@@ -65,6 +65,12 @@ class VentasController:
         
         total_time = time.time() - start_time
         print(f"Total processing time: {total_time:.2f} seconds")
+
+        print("\n" + "="*80)
+        print("====>  Procesando partidas de facturas de venta a ERP  <====")
+        print("="*80)
+        time.sleep(3)
+
         
         return headers
         
@@ -148,6 +154,7 @@ class VentasController:
         for record in raw_data:
             transformed = self.transform_record(record, field_mappings)
             if transformed:
+                print("\n record:", transformed)
                 transformed_data.append(transformed)
         
         return transformed_data
@@ -176,8 +183,8 @@ class VentasController:
                 transformed[mapping['velneo_table']] = value
                 
         # Print first record for debugging
-        if not hasattr(VentasController, '_printed_transform'):
-            print("\nTransformed record example:", transformed)
-            setattr(VentasController, '_printed_transform', True)
+        # if not hasattr(VentasController, '_printed_transform'):
+            # print("\n records:", transformed)
+            # setattr(VentasController, '_printed_transform', True)
                 
         return transformed

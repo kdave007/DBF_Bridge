@@ -4,6 +4,7 @@ from turtle import st
 from pathlib import Path
 from src.config.db_config import PostgresConnection
 import hashlib
+import time
 # Add project root to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(project_root)
@@ -46,7 +47,7 @@ class MatchesProcess:
         #fetch dbf data
         dbf_results = self.get_dbf_data(config, start_date, end_date)
 
-        print(dbf_results)
+        # print(dbf_results)
 
         # Process DBF data through DataMap for API formatting
         dbf_results = self.db_map_implementations(dbf_results)
@@ -62,6 +63,7 @@ class MatchesProcess:
             # When SQL records exist, compare them with DBF records
             comparison_result = self.comparator.compare_records_by_hash(dbf_records=dbf_results, sql_records=sql_records, start_date=start_date, end_date=end_date)
         
+       
         # Print summary of operations
         self.print_comparison_results(comparison_result)
 
@@ -134,10 +136,11 @@ class MatchesProcess:
     # Comparison methods have been moved to DBFSQLComparator class
 
     def print_comparison_results(self, detailed_comparison):
-        print("\n=================================================")
-        print("=== API OPERATIONS SUMMARY ===")
-        print("=================================================\n")
+        # print("\n=================================================")
+        # print("=== API OPERATIONS SUMMARY ===")
+        # print("=================================================\n")
         
+
         # # More debug prints
         # print(f"DEBUG: detailed_comparison type: {type(detailed_comparison)}")
         # print(f"DEBUG: detailed_comparison content: {detailed_comparison}")

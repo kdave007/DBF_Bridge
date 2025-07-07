@@ -1,5 +1,4 @@
 
-
 from .find_matches_process import MatchesProcess
 from .api_response_tracking import APIResponseTracking
 from .send_request import SendRequest
@@ -8,13 +7,28 @@ from .op import OP
 from datetime import date
 import os
 import sys
+import time
 
 class WorkFlow:
     def start(self, config, start_date, end_date):
 
+        print("\n" + "="*80)
+        print("====>  Procesando cabeceras de facturas de venta a ERP  <====")
+        print("="*80)
+        time.sleep(4)
+
         self.matches_process = MatchesProcess()
         result = self.matches_process.compare_data(config, start_date, end_date)
-        # print(f' MAIN W Result {result}')
+      
+        print(f' MAIN W Result {result}')
+
+        print("\n" + "="*80)
+        print("====>  Procesando pagos de facturas de venta a ERP  <====")
+        print("="*80)
+        time.sleep(4)
+
+        # print("STOP")
+        # sys.exit()
 
         if result:
             #{
@@ -52,8 +66,8 @@ class WorkFlow:
         #          }
         #     }
         # }
-        if result:
-            pass
+        # if result:
+        #     pass
             #print(f' api actions /////// { result['detailed_comparison']['api_operations']} //////////////////////////')
             # api = APIRequestProcess()
             # result = api.execute_actions(result['api_operations'])

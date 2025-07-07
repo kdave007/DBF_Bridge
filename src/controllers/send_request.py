@@ -120,8 +120,8 @@ class SendRequest:
                     "emp_div": str(dbf_record.get('emp_div')),
                     "num_doc": folio,
                     "clt": dbf_record.get('clt'),
-                    # "fpg": dbf_record.get('fpg'),
-                    "fpg": 20,
+                    "fpg": dbf_record.get('fpg'),
+                    # "fpg": 20,
                     "cmr": dbf_record.get('cmr'),
                     "fch": self._format_date_to_iso(dbf_record.get("fecha")),
                     # "tot_fac": dbf_record.get("total_bruto"),
@@ -137,8 +137,8 @@ class SendRequest:
                     "dum": 1,
                     "alm": str(dbf_record.get('alm')),
                     "fac": "1",
-                    "off": 1,
-                    "error de campor":1
+                    "off": 1
+                    # "error de campor":1
                 }
             except Exception as e:
                 print(f'Error preparing payload: {e}')
