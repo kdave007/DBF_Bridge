@@ -472,7 +472,8 @@ class SendDetails:
                 "off": 0,
                 "emp": emp,
                 "emp_div": emp_div,
-                "fpg": 20
+                "fpg": 20,
+                "pre_con_iva_inc": 1
             })
             
             # Construct URL with the ID

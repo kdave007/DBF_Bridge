@@ -23,7 +23,7 @@ class WorkFlow:
         print(f' MAIN W Result {result}')
 
         print("\n" + "="*80)
-        print("====>  Procesando pagos de facturas de venta a ERP  <====")
+        print("====>  Procesando recibos de cobro  de venta a ERP  <====")
         print("="*80)
         time.sleep(4)
 
